@@ -1,0 +1,29 @@
+{
+  "name": "elwing-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local architecture diagram MCP server",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "elwing-mcp": "dist/stdio.js"
+  },
+  "files": [
+    "dist/",
+    "NOTICE.md",
+    "THIRD-PARTY-LICENSES.md",
+    "third-party-notices/"
+  ],
+  "scripts": {
+    "build": "npm --prefix engine ci --ignore-scripts --no-audit --no-fund && npm --prefix mcp ci --ignore-scripts --no-audit --no-fund && npm --prefix mcp run build && node mcp/scripts/build-standalone.mjs",
+    "test": "npm run build && npm --prefix engine test && npm --prefix mcp test && node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1"
+  }
+}

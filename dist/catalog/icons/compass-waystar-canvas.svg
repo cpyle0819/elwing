@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><g color="#718894"><g class="compass-rose" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M104 34a58 58 0 0 1 42 42m0 28a58 58 0 0 1-42 42m-28 0a58 58 0 0 1-42-42m0-28a58 58 0 0 1 42-42" opacity=".6" stroke-width="1.8"/>
+      <path d="M90 8Q94 70 103 77Q114 84 163 90Q114 96 103 103Q96 114 90 165Q84 114 77 103Q66 96 17 90Q66 84 77 77Q86 68 90 8Z"/>
+      <path d="M90 8V90L77 77Q86 68 90 8ZM90 90H163Q114 96 103 103ZM90 90V165Q84 114 77 103ZM90 90H17Q66 84 77 77Z" fill="currentColor" fill-opacity=".65" stroke="none"/>
+      <g transform="rotate(45 90 90)"><path d="M90 38v13M90 58v9" stroke-width="2.5"/></g><g transform="rotate(135 90 90)"><path d="M90 38v13M90 58v9" stroke-width="2.5"/></g><g transform="rotate(225 90 90)"><path d="M90 38v13M90 58v9" stroke-width="2.5"/></g><g transform="rotate(315 90 90)"><path d="M90 38v13M90 58v9" stroke-width="2.5"/></g>
+      <circle cx="90" cy="90" r="5" fill="currentColor"/></g></g></svg>

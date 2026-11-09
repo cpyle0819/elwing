@@ -1,0 +1,366 @@
+{
+  "version": 1,
+  "title": "Game backend on AWS",
+  "nodes": [
+    {
+      "id": "client",
+      "service": "custom",
+      "name": "Player game client on PC or console",
+      "x": -30,
+      "y": 110,
+      "resourceName": "Game client"
+    },
+    {
+      "id": "cf",
+      "service": "cloudfront",
+      "name": "Patch CDN",
+      "x": 350,
+      "y": 110
+    },
+    {
+      "id": "assets",
+      "service": "s3",
+      "name": "Patch builds bucket",
+      "x": 630,
+      "y": 110
+    },
+    {
+      "id": "assetmeta",
+      "service": "s3",
+      "name": "Patch metadata bucket",
+      "x": 630,
+      "y": 1370
+    },
+    {
+      "id": "cog",
+      "service": "cognito",
+      "name": "Player auth",
+      "x": 350,
+      "y": 320
+    },
+    {
+      "id": "api",
+      "service": "apigateway",
+      "name": "Game API",
+      "x": 350,
+      "y": 530
+    },
+    {
+      "id": "profilefn",
+      "service": "lambda",
+      "name": "Profile service",
+      "x": 630,
+      "y": 1580
+    },
+    {
+      "id": "inventoryfn",
+      "service": "lambda",
+      "name": "Inventory service",
+      "x": 630,
+      "y": 1790
+    },
+    {
+      "id": "matchfn",
+      "service": "lambda",
+      "name": "Matchmaking service",
+      "x": 630,
+      "y": 2000
+    },
+    {
+      "id": "leaderfn",
+      "service": "lambda",
+      "name": "Leaderboard API",
+      "x": 630,
+      "y": 2210
+    },
+    {
+      "id": "profileddb",
+      "service": "dynamodb",
+      "name": "Player profiles table",
+      "x": 910,
+      "y": 1160
+    },
+    {
+      "id": "inventoryddb",
+      "service": "dynamodb",
+      "name": "Player inventory table",
+      "x": 910,
+      "y": 1370
+    },
+    {
+      "id": "matchddb",
+      "service": "dynamodb",
+      "name": "Match history table",
+      "x": 630,
+      "y": 2420
+    },
+    {
+      "id": "sessionddb",
+      "service": "dynamodb",
+      "name": "Session state table",
+      "x": 630,
+      "y": 2630
+    },
+    {
+      "id": "redis",
+      "service": "amazon-elasticache",
+      "name": "Leaderboard cache",
+      "x": 630,
+      "y": 740
+    },
+    {
+      "id": "gamelift",
+      "service": "amazon-gamelift-servers",
+      "name": "GameLift fleets",
+      "x": 350,
+      "y": 740
+    },
+    {
+      "id": "flex",
+      "service": "custom",
+      "name": "FlexMatch rule sets and match queues",
+      "x": 910,
+      "y": 1580,
+      "resourceName": "Matchmaking config"
+    },
+    {
+      "id": "kds",
+      "service": "amazon-kinesis-data-streams",
+      "name": "Telemetry stream",
+      "x": 630,
+      "y": 950
+    },
+    {
+      "id": "telefn",
+      "service": "lambda",
+      "name": "Telemetry processor",
+      "x": 910,
+      "y": 1790
+    },
+    {
+      "id": "events",
+      "service": "s3",
+      "name": "Raw telemetry bucket",
+      "x": 910,
+      "y": 110
+    },
+    {
+      "id": "curated",
+      "service": "s3",
+      "name": "Curated analytics bucket",
+      "x": 1190,
+      "y": 1160
+    },
+    {
+      "id": "athena",
+      "service": "amazon-athena",
+      "name": "Analytics queries",
+      "x": 70,
+      "y": 320
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "client",
+      "target": "cog",
+      "verb": "custom",
+      "label": "signs in"
+    },
+    {
+      "id": "e2",
+      "source": "client",
+      "target": "cf",
+      "verb": "custom",
+      "label": "downloads builds"
+    },
+    {
+      "id": "e3",
+      "source": "cf",
+      "target": "assets",
+      "verb": "forwards to"
+    },
+    {
+      "id": "e4",
+      "source": "client",
+      "target": "api",
+      "verb": "custom",
+      "label": "calls api"
+    },
+    {
+      "id": "e5",
+      "source": "api",
+      "target": "cog",
+      "verb": "authorizes with"
+    },
+    {
+      "id": "e11",
+      "source": "client",
+      "target": "gamelift",
+      "verb": "custom",
+      "label": "joins match"
+    },
+    {
+      "id": "e14",
+      "source": "gamelift",
+      "target": "kds",
+      "verb": "custom",
+      "label": "emits events"
+    },
+    {
+      "id": "e15",
+      "source": "kds",
+      "target": "events",
+      "verb": "custom",
+      "label": "archives events"
+    },
+    {
+      "id": "e16",
+      "source": "cf",
+      "target": "assetmeta",
+      "verb": "forwards to"
+    },
+    {
+      "id": "e17",
+      "source": "api",
+      "target": "profilefn",
+      "verb": "invokes"
+    },
+    {
+      "id": "e18",
+      "source": "api",
+      "target": "inventoryfn",
+      "verb": "invokes"
+    },
+    {
+      "id": "e19",
+      "source": "api",
+      "target": "matchfn",
+      "verb": "invokes"
+    },
+    {
+      "id": "e20",
+      "source": "api",
+      "target": "leaderfn",
+      "verb": "invokes"
+    },
+    {
+      "id": "e21",
+      "source": "profilefn",
+      "target": "profileddb",
+      "verb": "reads from"
+    },
+    {
+      "id": "e22",
+      "source": "profilefn",
+      "target": "profileddb",
+      "verb": "writes to"
+    },
+    {
+      "id": "e23",
+      "source": "inventoryfn",
+      "target": "inventoryddb",
+      "verb": "reads from"
+    },
+    {
+      "id": "e24",
+      "source": "inventoryfn",
+      "target": "inventoryddb",
+      "verb": "writes to"
+    },
+    {
+      "id": "e25",
+      "source": "matchfn",
+      "target": "matchddb",
+      "verb": "reads from"
+    },
+    {
+      "id": "e26",
+      "source": "matchfn",
+      "target": "sessionddb",
+      "verb": "writes to"
+    },
+    {
+      "id": "e27",
+      "source": "leaderfn",
+      "target": "redis",
+      "verb": "custom",
+      "label": "reads ranks"
+    },
+    {
+      "id": "e28",
+      "source": "matchfn",
+      "target": "gamelift",
+      "verb": "custom",
+      "label": "creates match"
+    },
+    {
+      "id": "e29",
+      "source": "matchfn",
+      "target": "flex",
+      "verb": "custom",
+      "label": "uses rules"
+    },
+    {
+      "id": "e30",
+      "source": "flex",
+      "target": "gamelift",
+      "verb": "custom",
+      "label": "drives matching"
+    },
+    {
+      "id": "e31",
+      "source": "gamelift",
+      "target": "matchddb",
+      "verb": "custom",
+      "label": "writes results"
+    },
+    {
+      "id": "e32",
+      "source": "gamelift",
+      "target": "sessionddb",
+      "verb": "custom",
+      "label": "updates session"
+    },
+    {
+      "id": "e33",
+      "source": "gamelift",
+      "target": "redis",
+      "verb": "custom",
+      "label": "updates ranks"
+    },
+    {
+      "id": "e34",
+      "source": "kds",
+      "target": "telefn",
+      "verb": "custom",
+      "label": "triggers"
+    },
+    {
+      "id": "e35",
+      "source": "telefn",
+      "target": "events",
+      "verb": "writes to"
+    },
+    {
+      "id": "e36",
+      "source": "telefn",
+      "target": "curated",
+      "verb": "writes to"
+    },
+    {
+      "id": "e37",
+      "source": "athena",
+      "target": "events",
+      "verb": "custom",
+      "label": "queries data"
+    },
+    {
+      "id": "e38",
+      "source": "athena",
+      "target": "curated",
+      "verb": "custom",
+      "label": "queries data"
+    }
+  ]
+}

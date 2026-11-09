@@ -1,0 +1,36 @@
+{
+  "mainline": "25674762ea825cdc966bc8391c6b7c6bb56e3bc3",
+  "catalogSha256": "bb5f9f944aa658a2939b84cf8086320b1f95c3d7326e47166b7cb0cf69a7d959",
+  "invalidDiagram": {
+    "version": 1,
+    "title": "Blank",
+    "nodes": [
+      {
+        "id": "fn",
+        "service": "lambda",
+        "name": "Worker",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "id": "queue",
+        "service": "sqs",
+        "name": "Queue",
+        "x": 400,
+        "y": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "bad",
+        "source": "fn",
+        "target": "queue",
+        "verb": "invokes"
+      }
+    ]
+  },
+  "relationshipIssues": [
+    "Edge bad: Worker → Queue: “invokes” is not documented in this catalog for lambda → sqs. Choose: sends to, reads from. Source type: general service; target type: general service. Allowed verbs for these exact nodes: sends to, reads from. With optional resourceType fields omitted on both endpoints, the service-level verbs are: sends to, reads from. Reconsider optional granularity, endpoints, and the operation; do not disguise an invalid operation as Custom."
+  ],
+  "designRulesSha256": "5d1de8b9c25a2b21cbe2bd7fd8158ce8ec742ac3c9eba3c67893c02d13103028"
+}

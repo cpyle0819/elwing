@@ -1,0 +1,7 @@
+node_modules/
+build/
+test-results/
+catalog/additional-relationships.js
+catalog/service-event-relationships.js
+catalog/service-exclusions.js
+catalog/resource-types-data.js

@@ -1,0 +1,52 @@
+{
+  "name": "elwing-diagram-engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pretest": "npm run format:check && npm run lint",
+    "test": "node --test test/*.test.js",
+    "format": "prettier --write \"*.js\" \"diagram/**/*.js\" \"render/**/*.js\" \"catalog/**/*.js\" \"operations/**/*.js\" \"guidance/**/*.js\" \"test/**/*.js\"",
+    "format:check": "prettier --check \"*.js\" \"diagram/**/*.js\" \"render/**/*.js\" \"catalog/**/*.js\" \"operations/**/*.js\" \"guidance/**/*.js\" \"test/**/*.js\"",
+    "lint": "eslint diagram render catalog operations guidance \"*.js\""
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "eslint": "9.39.1",
+    "globals": "16.5.0",
+    "prettier": "3.6.2"
+  },
+  "version": "1.0.0",
+  "files": [
+    "diagram/",
+    "render/",
+    "catalog/",
+    "operations/",
+    "guidance/",
+    "docs/"
+  ],
+  "exports": {
+    "./diagram/model": "./diagram/model.js",
+    "./diagram/groups": "./diagram/groups.js",
+    "./diagram/layout": "./diagram/layout.js",
+    "./diagram/routing": "./diagram/routing.js",
+    "./diagram/manual-routing": "./diagram/manual-routing.js",
+    "./diagram/resource-sizing": "./diagram/resource-sizing.js",
+    "./diagram/presentation": "./diagram/diagram-presentation.js",
+    "./diagram/connector-colors": "./diagram/connector-colors.js",
+    "./catalog/relationships": "./catalog/relationship-rules.js",
+    "./catalog/resource-types": "./catalog/resource-types.js",
+    "./catalog/services": "./catalog/service-catalog.js",
+    "./renderer": "./render/svg-renderer.js",
+    "./image-export": "./diagram/image-export.js",
+    "./excalidraw-export": "./diagram/excalidraw-export.js",
+    "./agent/operations": "./operations/diagram-operations.js",
+    "./agent/tools": "./operations/operations-schema.js",
+    "./agent/readability": "./operations/readability.js",
+    "./guidance/design-rules": "./guidance/design-rules.js",
+    "./catalog/graph": "./catalog/catalog-graph.js",
+    "./text": "./diagram/text.js",
+    "./services.json": "./catalog/services.json",
+    "./assets/*": "./catalog/icons/*",
+    "./package.json": "./package.json"
+  }
+}

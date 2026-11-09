@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -18 190 204"><g color="#edcf88"><g class="compass-case" fill="none" stroke="currentColor">
+  <circle cx="90" cy="-6" r="7" stroke-width="3"/>
+  <circle cx="90" cy="90" r="86" stroke-width="4"/>
+  <circle cx="90" cy="90" r="81" stroke-width="1.5"/>
+</g><g class="compass-rose" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="90" cy="90" r="57" opacity=".45" stroke-width="1.4"/>
+      <g transform="rotate(45 90 90)"><path d="M90 39 97 82 90 90 83 82Z" fill="currentColor" fill-opacity=".2"/></g><g transform="rotate(135 90 90)"><path d="M90 39 97 82 90 90 83 82Z" fill="currentColor" fill-opacity=".2"/></g><g transform="rotate(225 90 90)"><path d="M90 39 97 82 90 90 83 82Z" fill="currentColor" fill-opacity=".2"/></g><g transform="rotate(315 90 90)"><path d="M90 39 97 82 90 90 83 82Z" fill="currentColor" fill-opacity=".2"/></g>
+      <g transform="rotate(0 90 90)"><path d="M90 12 103 77 90 90 77 77Z"/><path d="M90 12v78L77 77Z" fill="currentColor" stroke="none"/></g><g transform="rotate(90 90 90)"><path d="M90 12 103 77 90 90 77 77Z"/><path d="M90 12v78L77 77Z" fill="currentColor" stroke="none"/></g><g transform="rotate(180 90 90)"><path d="M90 12 103 77 90 90 77 77Z"/><path d="M90 12v78L77 77Z" fill="currentColor" stroke="none"/></g><g transform="rotate(270 90 90)"><path d="M90 12 103 77 90 90 77 77Z"/><path d="M90 12v78L77 77Z" fill="currentColor" stroke="none"/></g>
+      <circle cx="90" cy="90" r="7" fill="currentColor"/><circle cx="90" cy="90" r="2" fill="#f3f0e7" stroke="none"/></g></g></svg>

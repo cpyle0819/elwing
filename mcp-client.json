@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "elwing": {
+      "command": "elwing-mcp",
+      "args": []
+    }
+  }
+}

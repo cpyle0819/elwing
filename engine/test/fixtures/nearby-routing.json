@@ -1,0 +1,156 @@
+{
+  "nodes": [
+    {
+      "id": "n0",
+      "x": 10,
+      "y": 24
+    },
+    {
+      "id": "n1",
+      "x": 232,
+      "y": 23
+    },
+    {
+      "id": "n2",
+      "x": 468,
+      "y": 27
+    },
+    {
+      "id": "n3",
+      "x": 697,
+      "y": 27
+    },
+    {
+      "id": "n4",
+      "x": 22,
+      "y": 190
+    },
+    {
+      "id": "n5",
+      "x": 255,
+      "y": 187
+    },
+    {
+      "id": "n6",
+      "x": 484,
+      "y": 186
+    },
+    {
+      "id": "n7",
+      "x": 698,
+      "y": 205
+    },
+    {
+      "id": "n8",
+      "x": 2,
+      "y": 367
+    },
+    {
+      "id": "n9",
+      "x": 252,
+      "y": 376
+    },
+    {
+      "id": "n10",
+      "x": 486,
+      "y": 361
+    },
+    {
+      "id": "n11",
+      "x": 699,
+      "y": 361
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "n10",
+      "target": "n4",
+      "verb": "reads from"
+    },
+    {
+      "id": "e1",
+      "source": "n11",
+      "target": "n8",
+      "verb": "invokes"
+    },
+    {
+      "id": "e2",
+      "source": "n1",
+      "target": "n4",
+      "verb": "invokes"
+    },
+    {
+      "id": "e3",
+      "source": "n2",
+      "target": "n1",
+      "verb": "reads from"
+    },
+    {
+      "id": "e4",
+      "source": "n11",
+      "target": "n1",
+      "verb": "invokes"
+    },
+    {
+      "id": "e5",
+      "source": "n11",
+      "target": "n0",
+      "verb": "invokes"
+    },
+    {
+      "id": "e6",
+      "source": "n7",
+      "target": "n4",
+      "verb": "reads from"
+    },
+    {
+      "id": "e7",
+      "source": "n4",
+      "target": "n5",
+      "verb": "invokes"
+    },
+    {
+      "id": "e8",
+      "source": "n1",
+      "target": "n7",
+      "verb": "invokes"
+    },
+    {
+      "id": "e10",
+      "source": "n8",
+      "target": "n5",
+      "verb": "invokes"
+    },
+    {
+      "id": "e11",
+      "source": "n3",
+      "target": "n10",
+      "verb": "invokes"
+    },
+    {
+      "id": "e12",
+      "source": "n4",
+      "target": "n1",
+      "verb": "reads from"
+    },
+    {
+      "id": "e13",
+      "source": "n0",
+      "target": "n11",
+      "verb": "invokes"
+    },
+    {
+      "id": "e14",
+      "source": "n8",
+      "target": "n7",
+      "verb": "invokes"
+    },
+    {
+      "id": "e15",
+      "source": "n1",
+      "target": "n10",
+      "verb": "reads from"
+    }
+  ]
+}

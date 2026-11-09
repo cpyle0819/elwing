@@ -1,0 +1,220 @@
+{
+  "total": 303,
+  "connected": 287,
+  "relationships": 461,
+  "pending": [],
+  "excluded": [
+    {
+      "id": "aws-panorama",
+      "kind": "retired",
+      "reason": "AWS Panorama ended support on May 31, 2026. AWS states that both the cloud service and connected Panorama devices cease functioning; no current relationship is selectable.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/panorama/latest/dev/panorama-end-of-support.html",
+          "summary": "AWS states that Panorama resources and the console are unavailable after May 31, 2026, and devices depend on the discontinued cloud service."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "amazon-lookout-for-vision",
+      "kind": "retired",
+      "reason": "Lookout for Vision was discontinued on October 31, 2025. Archived event/API documentation does not establish a current integration.",
+      "references": [
+        {
+          "url": "https://aws.amazon.com/blogs/machine-learning/exploring-alternatives-and-seamlessly-migrating-data-from-amazon-lookout-for-vision/",
+          "summary": "AWS announces discontinuation on October 31, 2025 and describes exporting data to alternatives."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "amazon-elastic-inference",
+      "kind": "retired",
+      "reason": "Amazon Elastic Inference is no longer available. Its deprecated EC2 accelerator parameter cannot establish an active integration.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RunInstances.html",
+          "summary": "The EC2 RunInstances reference marks ElasticInferenceAccelerator deprecated and states that Amazon Elastic Inference is no longer available."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-activate",
+      "kind": "program",
+      "reason": "Activate is a startup credits and support program, not a deployable resource or data endpoint. Credit eligibility and human support are not runtime architecture connections.",
+      "references": [
+        {
+          "url": "https://aws.amazon.com/gametech/activate-aws-for-games/",
+          "summary": "Activate credits offset eligible AWS service charges and are tracked through Activate and Billing consoles."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-professional-services",
+      "kind": "program",
+      "reason": "Professional Services represents consulting engagements. The offering itself has no deployable resource endpoint to connect; infrastructure delivered by an engagement is modeled using its actual AWS services.",
+      "references": [
+        {
+          "url": "https://aws.amazon.com/professional-services/",
+          "summary": "AWS Professional Services provides consulting expertise and engagement delivery with AWS partners."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-training-certification",
+      "kind": "program",
+      "reason": "Training and Certification represents education and credentials, not an architecture resource. Resources provisioned in a training lab are modeled as those resources.",
+      "references": [
+        {
+          "url": "https://aws.amazon.com/training/",
+          "summary": "AWS Training and Certification provides cloud training and certification programs."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-repost",
+      "kind": "community",
+      "reason": "Public re:Post is a human Q&A community, not a customer-deployed architecture resource. This exclusion does not apply to the separate re:Post Private service.",
+      "references": [
+        {
+          "url": "https://aws.amazon.com/blogs/aws/aws-repost-a-reimagined-qa-experience-for-the-aws-community/",
+          "summary": "AWS describes public re:Post as a community Q&A offering for customers, partners, and employees."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-iot-events",
+      "kind": "retired",
+      "reason": "AWS has ended support for IoT Events. Historical alarm and event examples do not establish a currently supported connection.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/iot-sitewise/latest/userguide/iot-events-alarm-notification-requirements.html",
+          "summary": "The SiteWise alarm documentation explicitly states that AWS ended support for IoT Events."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-elemental-mediastore",
+      "kind": "retired",
+      "reason": "MediaStore was discontinued on November 13, 2025. AWS states that the service and all its capabilities are unavailable after that date.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/managedservices/latest/userguide/elemental-media-store.html",
+          "summary": "The AWS managed-services guide explicitly announces MediaStore discontinuation and loss of service capabilities on November 13, 2025."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "amazon-chime",
+      "kind": "retired",
+      "reason": "The Amazon Chime service ended support on February 20, 2026; its console and application resources are unavailable. The separate Chime SDK service is unaffected.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/chime/",
+          "summary": "AWS announces the Chime service shutdown on February 20, 2026 and explicitly excludes Chime SDK from the shutdown."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-iq",
+      "kind": "retired",
+      "reason": "AWS IQ is in full shutdown, effective May 20, 2026. The service is no longer available or supported.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html",
+          "summary": "AWS General Reference lists IQ in full shutdown with an end-of-support date of May 20, 2026."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "amazon-workdocs",
+      "kind": "retired",
+      "reason": "Amazon WorkDocs shut down on April 25, 2025. Its service resources and API endpoints are no longer available.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html",
+          "summary": "AWS General Reference lists WorkDocs in full shutdown, effective April 25, 2025; full shutdown means unavailable and unsupported in any capacity."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "amazon-workdocs-sdk",
+      "kind": "retired",
+      "reason": "The WorkDocs SDK has no active WorkDocs service endpoint: Amazon WorkDocs shut down on April 25, 2025. Archived SDK references do not establish a usable integration.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html",
+          "summary": "AWS General Reference lists WorkDocs in full shutdown, including complete removal from the supported service portfolio."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-simspace-weaver",
+      "kind": "retired",
+      "reason": "AWS SimSpace Weaver has ended support. Its console and resources are no longer available.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/de_de/simspaceweaver/latest/userguide/what-is.html",
+          "summary": "The service-specific guide announces shutdown after May 20, 2026; the general shutdown table lists March 31, 2026. Both dates precede this review."
+        },
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html",
+          "summary": "The English General Reference lists SimSpace Weaver in full shutdown, effective March 31, 2026. This differs from the translated service-guide date but establishes the same retired status by the review date."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-snowball",
+      "kind": "retired",
+      "reason": "The Snowball/Snowball Edge workflow is excluded because AWS General Reference lists Snowball Edge in full shutdown, effective November 12, 2025. Earlier maintenance and existing-customer notices do not supersede that later lifecycle stage.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html",
+          "summary": "The lifecycle table lists AWS Snowball Edge in full shutdown on November 12, 2025, alongside retired 80 TB and GPU configurations."
+        },
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/maintenance_services.html",
+          "summary": "The maintenance table lists Snowball Edge Compute Optimized and Storage Optimized with an earlier October 7, 2025 announcement. The later full-shutdown entry governs this catalog."
+        },
+        {
+          "url": "https://aws.amazon.com/snowball/faqs/",
+          "summary": "The FAQ describes the Snowball service through Snowball Edge devices and carries a November 7, 2025 existing-customer restriction, earlier than the full-shutdown date."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    },
+    {
+      "id": "aws-snowball-edge",
+      "kind": "retired",
+      "reason": "The Snowball/Snowball Edge workflow is excluded because AWS General Reference lists Snowball Edge in full shutdown, effective November 12, 2025. Earlier maintenance and existing-customer notices do not supersede that later lifecycle stage.",
+      "references": [
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/full_shutdown_services.html",
+          "summary": "The lifecycle table lists AWS Snowball Edge in full shutdown on November 12, 2025, alongside retired 80 TB and GPU configurations."
+        },
+        {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/maintenance_services.html",
+          "summary": "The maintenance table lists Snowball Edge Compute Optimized and Storage Optimized with an earlier October 7, 2025 announcement. The later full-shutdown entry governs this catalog."
+        },
+        {
+          "url": "https://aws.amazon.com/snowball/faqs/",
+          "summary": "The FAQ describes the Snowball service through Snowball Edge devices and carries a November 7, 2025 existing-customer restriction, earlier than the full-shutdown date."
+        }
+      ],
+      "reviewed": "2026-09-17"
+    }
+  ]
+}
