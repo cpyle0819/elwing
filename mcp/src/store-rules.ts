@@ -15,6 +15,14 @@ export class StoreError extends Error {
     super(message);
   }
 }
+// Parser errors can echo the input, so callers get only a fixed StoreError.
+export function parseJson(text: string, code: string, message: string): any {
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new StoreError(code, message);
+  }
+}
 export const LIMITS = Object.freeze({
   diagrams: 1000,
   batchDelete: 50,
@@ -91,7 +99,11 @@ export const digest = (value: any) => createHash('sha256').update(canonical(valu
 export function validate(document: Diagram, serviceIds: string[]) {
   if (Buffer.byteLength(JSON.stringify(document)) > LIMITS.requestBytes)
     throw new StoreError('LIMIT_EXCEEDED', 'Diagram exceeds 2 MB.');
-  validateDocument(document, serviceIds);
+  try {
+    validateDocument(document, serviceIds);
+  } catch (error: any) {
+    throw new StoreError('INVALID_DIAGRAM', error.message);
+  }
 }
 
 export function applyDocument(original: Diagram, operations: any[], serviceIds: string[]) {

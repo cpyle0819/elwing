@@ -4682,7 +4682,7 @@ var require_core2 = __commonJS({
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
         if (!errors || errors.length === 0)
           return "No errors";
-        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
+        return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text3, msg) => text3 + separator + msg);
       }
       $dataMetaSchema(metaSchema, keywordsJsonPointers) {
         const rules = this.RULES.all;
@@ -12000,8 +12000,8 @@ var contributors = {
 function aggregateChecks(schema2) {
   const agg = {};
   const def = schema2._zod.def;
-  const list = schema2._zod.traits.has("$ZodCheck") ? [schema2, ...def.checks ?? []] : def.checks ?? [];
-  for (const ch of list)
+  const list2 = schema2._zod.traits.has("$ZodCheck") ? [schema2, ...def.checks ?? []] : def.checks ?? [];
+  for (const ch of list2)
     contributors[ch._zod.def.check]?.(agg, ch._zod.def);
   const bag = schema2._zod.bag;
   if (bag.minimum !== void 0)
@@ -23019,7 +23019,7 @@ var require_core$3 = /* @__PURE__ */ __commonJSMin(((exports) => {
     }
     errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
       if (!errors || errors.length === 0) return "No errors";
-      return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text2, msg) => text2 + separator + msg);
+      return errors.map((e) => `${dataVar}${e.instancePath} ${e.message}`).reduce((text3, msg) => text3 + separator + msg);
     }
     $dataMetaSchema(metaSchema, keywordsJsonPointers) {
       const rules = this.RULES.all;
@@ -25472,7 +25472,7 @@ var require_json_schema_2019_09 = /* @__PURE__ */ __commonJSMin(((exports) => {
   const content = require_content$1();
   const core = require_core$1();
   const format = require_format();
-  const metadata = require_meta_data$1();
+  const metadata2 = require_meta_data$1();
   const validation = require_validation$1();
   const META_SUPPORT_DATA = ["/properties"];
   function addMetaSchema2019($data) {
@@ -25482,7 +25482,7 @@ var require_json_schema_2019_09 = /* @__PURE__ */ __commonJSMin(((exports) => {
       content,
       core,
       with$data(this, format),
-      metadata,
+      metadata2,
       with$data(this, validation)
     ].forEach((sch) => this.addMetaSchema(sch, void 0, false));
     return this;
@@ -25922,7 +25922,7 @@ var require_json_schema_2020_12 = /* @__PURE__ */ __commonJSMin(((exports) => {
   const content = require_content();
   const core = require_core();
   const format = require_format_annotation();
-  const metadata = require_meta_data();
+  const metadata2 = require_meta_data();
   const validation = require_validation();
   const META_SUPPORT_DATA = ["/properties"];
   function addMetaSchema2020($data) {
@@ -25933,7 +25933,7 @@ var require_json_schema_2020_12 = /* @__PURE__ */ __commonJSMin(((exports) => {
       content,
       core,
       with$data(this, format),
-      metadata,
+      metadata2,
       with$data(this, validation)
     ].forEach((sch) => this.addMetaSchema(sch, void 0, false));
     return this;
@@ -26325,11 +26325,11 @@ var require_dist = /* @__PURE__ */ __commonJSMin(((exports, module) => {
     if (!f) throw new Error(`Unknown format "${name}"`);
     return f;
   };
-  function addFormats2(ajv, list, fs, exportName) {
+  function addFormats2(ajv, list2, fs, exportName) {
     var _a3;
     var _b;
     (_a3 = (_b = ajv.opts.code).formats) !== null && _a3 !== void 0 || (_b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`);
-    for (const f of list) ajv.addFormat(f, fs[f]);
+    for (const f of list2) ajv.addFormat(f, fs[f]);
   }
   module.exports = exports = formatsPlugin;
   Object.defineProperty(exports, "__esModule", { value: true });
@@ -27499,29 +27499,29 @@ var McpServer = class {
   }
   registerResource(name, uriOrTemplate, config2, readCallback) {
     const { cacheHint, scopeChallenge, ...resourceMetadata } = config2;
-    const metadata = resourceMetadata;
+    const metadata2 = resourceMetadata;
     if (cacheHint !== void 0) assertValidCacheHint(cacheHint, `resource ${name}`);
     if (typeof uriOrTemplate === "string") {
       if (this._registeredResources[uriOrTemplate]) throw new Error(`Resource ${uriOrTemplate} is already registered`);
-      const registeredResource = this._createRegisteredResource(name, config2.title, uriOrTemplate, metadata, scopeChallenge, readCallback);
+      const registeredResource = this._createRegisteredResource(name, config2.title, uriOrTemplate, metadata2, scopeChallenge, readCallback);
       if (cacheHint !== void 0) registeredResource.cacheHint = cacheHint;
       this.setResourceRequestHandlers();
       this.sendResourceListChanged();
       return registeredResource;
     } else {
       if (this._registeredResourceTemplates[name]) throw new Error(`Resource template ${name} is already registered`);
-      const registeredResourceTemplate = this._createRegisteredResourceTemplate(name, config2.title, uriOrTemplate, metadata, scopeChallenge, readCallback);
+      const registeredResourceTemplate = this._createRegisteredResourceTemplate(name, config2.title, uriOrTemplate, metadata2, scopeChallenge, readCallback);
       if (cacheHint !== void 0) registeredResourceTemplate.cacheHint = cacheHint;
       this.setResourceRequestHandlers();
       this.sendResourceListChanged();
       return registeredResourceTemplate;
     }
   }
-  _createRegisteredResource(name, title, uri, metadata, scopeChallenge, readCallback) {
+  _createRegisteredResource(name, title, uri, metadata2, scopeChallenge, readCallback) {
     const registeredResource = {
       name,
       title,
-      metadata,
+      metadata: metadata2,
       readCallback,
       scopeChallenge,
       enabled: true,
@@ -27545,11 +27545,11 @@ var McpServer = class {
     this._registeredResources[uri] = registeredResource;
     return registeredResource;
   }
-  _createRegisteredResourceTemplate(name, title, template, metadata, scopeChallenge, readCallback) {
+  _createRegisteredResourceTemplate(name, title, template, metadata2, scopeChallenge, readCallback) {
     const registeredResourceTemplate = {
       resourceTemplate: template,
       title,
-      metadata,
+      metadata: metadata2,
       readCallback,
       scopeChallenge,
       enabled: true,
@@ -28060,11 +28060,11 @@ var MAX_AUTO_HEIGHT = 256;
 var MAX_RESOURCE_TEXT = 1e3;
 var resourceTextTop = (node2) => node2.service === "custom" ? 49 : 64;
 var characterWidth = (character) => /[MWmw@#%]/.test(character) ? 11 : /[ilI.,'!:;| ]/.test(character) ? 4 : /[A-Z]/.test(character) ? 9 : character.codePointAt(0) > 255 ? 12 : 7;
-var textWidth = (text2) => Array.from(text2).reduce((width, character) => width + characterWidth(character), 0);
-function wrapResourceText(text2 = "", width = MIN_CARD_WIDTH) {
+var textWidth = (text3) => Array.from(text3).reduce((width, character) => width + characterWidth(character), 0);
+function wrapResourceText(text3 = "", width = MIN_CARD_WIDTH) {
   const available = width - 28;
   const lines = [];
-  for (const paragraph of text2.split("\n")) {
+  for (const paragraph of text3.split("\n")) {
     let line = "";
     for (const word of paragraph.trim().split(/\s+/)) {
       if (line && textWidth(`${line} ${word}`) > available) {
@@ -39015,6 +39015,13 @@ var StoreError = class extends Error {
   code;
   currentRevision;
 };
+function parseJson(text3, code, message) {
+  try {
+    return JSON.parse(text3);
+  } catch {
+    throw new StoreError(code, message);
+  }
+}
 var LIMITS = Object.freeze({
   diagrams: 1e3,
   batchDelete: 50,
@@ -39083,7 +39090,11 @@ var digest = (value) => createHash("sha256").update(canonical(value)).digest("he
 function validate2(document, serviceIds) {
   if (Buffer.byteLength(JSON.stringify(document)) > LIMITS.requestBytes)
     throw new StoreError("LIMIT_EXCEEDED", "Diagram exceeds 2 MB.");
-  validateDocument(document, serviceIds);
+  try {
+    validateDocument(document, serviceIds);
+  } catch (error2) {
+    throw new StoreError("INVALID_DIAGRAM", error2.message);
+  }
 }
 function applyDocument(original, operations, serviceIds) {
   let document;
@@ -39154,12 +39165,14 @@ async function atomicWrite(path, value) {
   }
 }
 async function json(path) {
+  let text3;
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    text3 = await readFile(path, "utf8");
   } catch (error2) {
     if (error2.code === "ENOENT") return;
     throw error2;
   }
+  return parseJson(text3, "UNAVAILABLE", "A data file is unreadable.");
 }
 function alive(pid) {
   try {
@@ -39644,16 +39657,16 @@ function compare(a, b) {
   }
   return 0;
 }
-function addSegments(index, list) {
-  for (const segment of list) {
+function addSegments(index, list2) {
+  for (const segment of list2) {
     const map = segment.h ? index.h : index.v, key = segment.h ? segment.a.y : segment.a.x;
     if (!map.has(key)) map.set(key, []);
     map.get(key).push(segment);
   }
 }
-function intersections(list, index, cache) {
+function intersections(list2, index, cache) {
   let overlap = 0, crossings = 0;
-  for (const s of list) {
+  for (const s of list2) {
     const key = `${s.a.x},${s.a.y},${s.b.x},${s.b.y}`;
     const cached2 = cache.get(key);
     if (cached2) {
@@ -39787,19 +39800,19 @@ function routeGraph(graph) {
       if (enclosure && points.some((point) => !withinBounds(point, enclosure))) return;
       if (points.length < 2 || along(points[0], points[1], sourceSide2) <= 0 || along(points.at(-2), points.at(-1), targetSide2) >= 0)
         return;
-      const list = segments(points);
+      const list2 = segments(points);
       let hits = 0, length = 0, longest = 0;
-      for (const [i, segment] of list.entries()) {
+      for (const [i, segment] of list2.entries()) {
         const span = distance(segment.a, segment.b);
         length += span;
         longest = Math.max(longest, span);
-        const key = `${segment.a.x},${segment.a.y},${segment.b.x},${segment.b.y},${i === 0},${i === list.length - 1}`;
+        const key = `${segment.a.x},${segment.a.y},${segment.b.x},${segment.b.y},${i === 0},${i === list2.length - 1}`;
         let segmentHits = hitCache.get(key);
         if (segmentHits === void 0) {
           segmentHits = 0;
           for (const node2 of graph.nodes) {
             if (isGroup(node2) && (a.groupId === node2.id || b.groupId === node2.id)) continue;
-            if (i === 0 && node2.id === a.id || i === list.length - 1 && node2.id === b.id)
+            if (i === 0 && node2.id === a.id || i === list2.length - 1 && node2.id === b.id)
               continue;
             if (segmentHitsCard(segment, node2, 6)) segmentHits++;
           }
@@ -39809,16 +39822,16 @@ function routeGraph(graph) {
         if (best && hits > best.score[0]) return;
       }
       if (best && hits > best.score[0]) return;
-      const { overlap, crossings } = intersections(list, index, intersectionCache);
+      const { overlap, crossings } = intersections(list2, index, intersectionCache);
       const score = [
         hits,
         overlap,
-        length + (list.length - 1) * 36 + crossings * 48 + Math.max(0, requiredLabelSpan - longest) * (list.length === 1 ? 0 : 8)
+        length + (list2.length - 1) * 36 + crossings * 48 + Math.max(0, requiredLabelSpan - longest) * (list2.length === 1 ? 0 : 8)
       ];
       if (!best || compare(score, best.score) < 0)
         best = {
           points,
-          segments: list,
+          segments: list2,
           sourceSide: sourceSide2,
           targetSide: targetSide2,
           sourceOffset,
@@ -39971,7 +39984,7 @@ function routeGraph(graph) {
     for (const segment of route.segments) {
       const length = distance(segment.a, segment.b), width = Math.max(0, Math.min(fullWidth, length - 10));
       const characters = Math.max(0, Math.floor((width - 6) / 6.3));
-      const text2 = width >= fullWidth ? label : characters >= 2 ? label.slice(0, characters - 1) + "\u2026" : width >= 7 ? "\u2026" : "";
+      const text3 = width >= fullWidth ? label : characters >= 2 ? label.slice(0, characters - 1) + "\u2026" : width >= 7 ? "\u2026" : "";
       const preferredRatio = (segment.h ? segment.b.x < segment.a.x : segment.b.y < segment.a.y) ? 1 - position : position;
       for (const ratio of [.../* @__PURE__ */ new Set([preferredRatio, 0.5, 0.3, 0.7, 0.1, 0.9])]) {
         const fraction = Math.max(
@@ -39982,7 +39995,7 @@ function routeGraph(graph) {
           x: segment.a.x + (segment.b.x - segment.a.x) * fraction,
           y: segment.a.y + (segment.b.y - segment.a.y) * fraction
         };
-        const box = text2 ? segment.h ? { x: mid.x - width / 2, y: mid.y - 7, w: width, h: 14 } : { x: mid.x - 7, y: mid.y - width / 2, w: 14, h: width } : { x: mid.x, y: mid.y, w: 0, h: 0 };
+        const box = text3 ? segment.h ? { x: mid.x - width / 2, y: mid.y - 7, w: width, h: 14 } : { x: mid.x - 7, y: mid.y - width / 2, w: 14, h: width } : { x: mid.x, y: mid.y, w: 0, h: 0 };
         let score = labelObstacles.reduce((sum, obstacle) => sum + boxOverlap(box, obstacle) * 100, 0) + labels.reduce((sum, b) => sum + boxOverlap(box, b) * 20, 0);
         for (let count = labelCrossings(box, edge.id, labelLines); count > 0; count--) score += 100;
         score += (fullWidth - width) * 10 + Math.abs(ratio - preferredRatio) * 40 + (segment.h ? 0 : 2);
@@ -39993,7 +40006,7 @@ function routeGraph(graph) {
           y: mid.y,
           labelWidth: width,
           labelAngle: segment.h ? 0 : -90,
-          labelText: text2
+          labelText: text3
         });
       }
     }
@@ -40044,7 +40057,7 @@ function escapeMarkup(value) {
 
 // engine/render/svg-renderer.js
 var edgeLabel = (edge) => edge.label ?? edge.verb;
-var truncate = (text2, limit) => text2.length > limit ? text2.slice(0, limit - 1) + "\u2026" : text2;
+var truncate = (text3, limit) => text3.length > limit ? text3.slice(0, limit - 1) + "\u2026" : text3;
 function wrappedLabel(node2) {
   const lines = wrapResourceText(node2.name, nodeWidth(node2));
   const top = resourceTextTop(node2);
@@ -40289,7 +40302,7 @@ function boundedPngScale(width, height) {
 }
 
 // engine/diagram/excalidraw-export.js
-var truncate2 = (text2, limit) => text2.length > limit ? text2.slice(0, limit - 1) + "\u2026" : text2;
+var truncate2 = (text3, limit) => text3.length > limit ? text3.slice(0, limit - 1) + "\u2026" : text3;
 var digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 var seed = (id2) => {
   let value = 2166136261;
@@ -40303,7 +40316,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
   const routes = renderer.routes(copy);
   const width = bounds.maxX - bounds.minX + 80;
   const height = bounds.maxY - bounds.minY + 100;
-  const timestamp = Date.parse(updatedAt ?? "");
+  const timestamp = new Date(updatedAt ?? "").getTime();
   const updated = Number.isFinite(timestamp) ? timestamp : 0;
   const elements = [];
   const files = {};
@@ -40342,7 +40355,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
     elements.push(value);
     return value;
   }
-  function text2(id2, value, x, baseline, fontSize, width2, extra = {}) {
+  function text3(id2, value, x, baseline, fontSize, width2, extra = {}) {
     if (!value) return;
     return element(
       "text",
@@ -40409,7 +40422,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
       }
     );
   }
-  text2(
+  text3(
     "title",
     copy.title,
     bounds.minX - 10,
@@ -40441,7 +40454,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
       ],
       { strokeColor: "#cbb793", groupIds }
     );
-    text2(
+    text3(
       `${id2}:name`,
       truncate2(node2.name, Math.floor((w - (showCount ? 110 : 32)) / 8)),
       node2.x + 16,
@@ -40451,13 +40464,13 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
       { strokeColor: "#355b6b", groupIds }
     );
     if (showCount)
-      text2(`${id2}:count`, `${count} resources`, node2.x + w - 106, node2.y + 25, 10, 90, {
+      text3(`${id2}:count`, `${count} resources`, node2.x + w - 106, node2.y + 25, 10, 90, {
         textAlign: "right",
         strokeColor: "#766247",
         groupIds
       });
     if (!count)
-      text2(`${id2}:hint`, "Drop resources here", node2.x + 16, node2.y + 80, 12, w - 32, {
+      text3(`${id2}:hint`, "Drop resources here", node2.x + 16, node2.y + 80, 12, w - 32, {
         strokeColor: "#637c86",
         groupIds
       });
@@ -40477,7 +40490,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
       const points = route.points, middle = Math.floor((points.length - 1) / 2);
       const a = points[middle], b = points[middle + (points.length % 2 === 0 ? 1 : 0)];
       const labelWidth = Math.max(1, route.labelText.length * 6.5);
-      const label = text2(
+      const label = text3(
         `${id2}:label`,
         route.labelText,
         (a.x + b.x) / 2 - labelWidth / 2,
@@ -40519,7 +40532,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
     const offset = custom ? node2.icon ? 48 : 14 : 57;
     const available = custom ? w - (node2.icon ? 62 : 28) : w - 70;
     const size = custom ? 12 : node2.resourceType ? 10 : 11;
-    text2(
+    text3(
       `${id2}:heading`,
       truncate2(heading, Math.floor(available / (custom ? 7 : node2.resourceType ? 5.2 : 6.5))),
       node2.x + offset,
@@ -40533,7 +40546,7 @@ function diagramExcalidraw(graph, renderer, { iconData = {}, serviceLabel: servi
     const value = lines.slice(0, maxLines).map(
       (line2, index) => index === maxLines - 1 && lines.length > maxLines ? line2.slice(0, -1) + "\u2026" : line2
     ).join("\n");
-    text2(`${id2}:name`, value, node2.x + 14, node2.y + top, 12, w - 28, { groupIds });
+    text3(`${id2}:name`, value, node2.x + 14, node2.y + top, 12, w - 28, { groupIds });
   }
   for (const { edge, route, arrow } of arrowElements) {
     for (const [end, nodeId, point] of [
@@ -40801,6 +40814,88 @@ var schema = (properties, required2 = Object.keys(properties)) => ({
   required: required2,
   additionalProperties: false
 });
+var text2 = { type: "string" };
+var integer2 = { type: "integer" };
+var number4 = { type: "number" };
+var flag = { type: "boolean" };
+var list = (items = {}) => ({ type: "array", items });
+var metadata = {
+  diagramId: text2,
+  title: text2,
+  revision: integer2,
+  nodeCount: integer2,
+  edgeCount: integer2,
+  services: list(text2),
+  servicesTruncated: flag,
+  createdAt: text2,
+  updatedAt: text2
+};
+var outputSchemas = {
+  create_diagram: schema({ diagramId: text2, revision: integer2, title: text2 }),
+  list_diagrams: schema({ items: list(schema(metadata)), nextCursor: text2 }, ["items"]),
+  get_diagram: schema({
+    ...metadata,
+    document: { type: "object" },
+    geometry: list(schema({ id: text2, x: number4, y: number4, width: number4, height: number4 }))
+  }),
+  apply_diagram_changes: schema({
+    diagramId: text2,
+    revision: integer2,
+    changed: flag,
+    operationsApplied: integer2
+  }),
+  delete_diagram: {
+    type: "object",
+    oneOf: [
+      schema({ diagramId: text2, deleted: flag }),
+      schema({
+        results: list(
+          schema({ diagramId: text2, status: text2, currentRevision: integer2 }, [
+            "diagramId",
+            "status"
+          ])
+        ),
+        deletedCount: integer2,
+        notFoundCount: integer2,
+        conflictCount: integer2
+      })
+    ]
+  },
+  export_diagram: schema(
+    {
+      filename: text2,
+      mimeType: text2,
+      width: number4,
+      height: number4,
+      revision: integer2,
+      diagramId: text2,
+      filePath: text2
+    },
+    ["filename", "mimeType", "width", "height", "revision", "diagramId"]
+  ),
+  catalog: schema(
+    {
+      services: list(),
+      resourceTypes: list(),
+      relationships: list(),
+      resourceTypeApprovals: list(),
+      diagramPrimitives: { type: "object" },
+      relatedServices: list()
+    },
+    ["services", "resourceTypes", "relationships", "resourceTypeApprovals", "diagramPrimitives"]
+  ),
+  readability_guide: schema({ guide: text2, designRules: text2, workflow: text2, limits: text2 }),
+  check_readability: schema({
+    diagramId: text2,
+    revision: integer2,
+    heuristic: flag,
+    resourceCount: integer2,
+    connectionCount: integer2,
+    findingCount: integer2,
+    findings: list(),
+    truncated: flag
+  })
+};
 var documentedOperations = structuredClone(operationsSchema);
 documentedOperations.description = 'Required ordered array of 0\u20131200 operation objects; no default. Runs atomically on one diagram, with no partial changes on failure. Empty or unchanged batches return changed:false without advancing revision. Maximum 2 MB. Read the guide, relevant catalog entries and current diagram first. Example: [{"op":"upsert_node","id":"processor","service":"lambda","name":"Resize photos"},{"op":"arrange"}]. Each item must match exactly one operation schema; extra fields are rejected. Unspecified node fields and embedded icons are preserved.';
 var operationHelp = {
@@ -40880,6 +40975,7 @@ var tool = (name, description, properties, required2, readOnly = true) => ({
   name: `elwing_${name}`,
   description: description + access,
   inputSchema: schema(properties, required2),
+  outputSchema: outputSchemas[name],
   readOnly
 });
 var toolDefinitions = [
@@ -40998,7 +41094,7 @@ var toolDefinitions = [
   ),
   tool(
     "export_diagram",
-    "Use when the user asks for an image, file, download or shareable picture of a diagram, usually after elwing_check_readability. Render the latest saved diagram as a self-contained SVG, PNG or editable Excalidraw file without changing state. Default workflow: export SVG and PNG; use excalidraw only when requested. Excalidraw keeps card groups and bound arrows but uses built-in fonts and omits crossing gaps; moved arrows may need bend adjustments. Use get_diagram for Elwing diagram data and apply_diagram_changes to arrange before rendering. Run check_readability first. Requires diagramId and format; no unsaved operations are accepted. Returns structuredContent:{filename,mimeType,width,height,revision,diagramId}, a JSON text metadata block and one embedded MCP resource with uri and mimeType. SVG resource.text is UTF-8 XML; Excalidraw resource.text is UTF-8 scene JSON (application/vnd.excalidraw+json, .excalidraw filename); PNG resource.blob is base64 bytes. The elwing://exports/... URI identifies embedded output, not a download endpoint. Dimensions are numeric rendered output dimensions; PNG scales up to 2x subject to 8192 pixels per side and 16 million pixels. Serialize at most 5 MB; LIMIT_EXCEEDED means simplify the diagram or try another format. Export does not repair readability; rendering failures can return INVALID_DIAGRAM." + readErrors,
+    "Use when the user asks for an image, file, download or shareable picture of a diagram, usually after elwing_check_readability. Render the latest saved diagram as a self-contained SVG, PNG or editable Excalidraw file without changing state. Default workflow: export SVG and PNG; use excalidraw only when requested. Excalidraw keeps card groups and bound arrows but uses built-in fonts and omits crossing gaps; moved arrows may need bend adjustments. Use get_diagram for Elwing diagram data and apply_diagram_changes to arrange before rendering. Run check_readability first. Requires diagramId and format; no unsaved operations are accepted. Returns structuredContent:{filename,mimeType,width,height,revision,diagramId}, a JSON text metadata block and one embedded MCP resource with uri and mimeType. SVG resource.text is UTF-8 XML; Excalidraw resource.text is UTF-8 scene JSON (application/vnd.excalidraw+json, .excalidraw filename); PNG resource.blob is base64 bytes. The elwing://exports/... URI identifies embedded output, not a download endpoint. Dimensions are numeric rendered output dimensions; PNG scales up to 2x subject to 8192 pixels per side and 16 million pixels. Serialize at most 5 MB; LIMIT_EXCEEDED means simplify the diagram or try another format. Export does not repair readability; rendering failures return INVALID_DIAGRAM with a fixed message; do not retry unchanged." + readErrors,
     {
       diagramId: id,
       format: {
@@ -41039,6 +41135,20 @@ var result = (value) => ({
   content: [{ type: "text", text: JSON.stringify(value) }],
   structuredContent: value
 });
+function registration(definition, profile) {
+  return {
+    description: definition.description,
+    inputSchema: fromJsonSchema2(definition.inputSchema),
+    outputSchema: fromJsonSchema2(definition.outputSchema),
+    annotations: {
+      title: definition.name.replace(/^elwing_/, "").replaceAll("_", " "),
+      readOnlyHint: definition.readOnly,
+      destructiveHint: ["elwing_delete_diagram", "elwing_apply_diagram_changes"].includes(definition.name) || !!profile.destructiveTools?.includes(definition.name),
+      idempotentHint: true,
+      openWorldHint: false
+    }
+  };
+}
 function buildRouter(owner, shared) {
   const profile = shared.profile ?? localProfile;
   const { serverInfo, instructions, guide, workflow } = profile;
@@ -41050,185 +41160,181 @@ function buildRouter(owner, shared) {
     definitions.splice(extra.position, 0, extra.definition);
   const router = new McpServer(serverInfo, { instructions });
   for (const definition of definitions)
-    router.registerTool(
-      definition.name,
-      {
-        description: definition.description,
-        inputSchema: fromJsonSchema2(definition.inputSchema),
-        annotations: {
-          title: definition.name.replace(/^elwing_/, "").replaceAll("_", " "),
-          readOnlyHint: definition.readOnly,
-          destructiveHint: ["elwing_delete_diagram", "elwing_apply_diagram_changes"].includes(definition.name) || !!profile.destructiveTools?.includes(definition.name),
-          idempotentHint: true,
-          openWorldHint: false
-        }
-      },
-      async (args2) => {
-        try {
-          const store = shared.store;
-          switch (definition.name) {
-            case "elwing_create_diagram":
-              return result(await store.create(owner, args2));
-            case "elwing_list_diagrams":
-              return result(await store.list(owner, args2.limit, args2.cursor));
-            case "elwing_apply_diagram_changes":
-              return result(await store.apply(owner, args2));
-            case "elwing_delete_diagram": {
-              const batch = args2.diagrams !== void 0;
-              if (batch ? args2.diagramId !== void 0 || args2.expectedRevision !== void 0 : args2.diagramId === void 0 || args2.expectedRevision === void 0)
-                throw new StoreError(
-                  "INVALID_ARGUMENT",
-                  "Supply diagrams OR diagramId and expectedRevision, plus mutationId."
-                );
-              return result(
-                batch ? await store.deleteMany(owner, args2) : await store.delete(owner, args2)
+    router.registerTool(definition.name, registration(definition, profile), async (args2) => {
+      try {
+        const store = shared.store;
+        switch (definition.name) {
+          case "elwing_create_diagram":
+            return result(await store.create(owner, args2));
+          case "elwing_list_diagrams":
+            return result(await store.list(owner, args2.limit, args2.cursor));
+          case "elwing_apply_diagram_changes":
+            return result(await store.apply(owner, args2));
+          case "elwing_delete_diagram": {
+            const batch = args2.diagrams !== void 0;
+            if (batch ? args2.diagramId !== void 0 || args2.expectedRevision !== void 0 : args2.diagramId === void 0 || args2.expectedRevision === void 0)
+              throw new StoreError(
+                "INVALID_ARGUMENT",
+                "Supply diagrams OR diagramId and expectedRevision, plus mutationId."
               );
-            }
-            case "elwing_readability_guide":
-              return result({ guide, designRules, workflow, limits: instructions });
-            case "elwing_catalog": {
-              const catalog = catalogGraph();
-              if (args2.service && args2.query)
-                throw new StoreError("INVALID_ARGUMENT", "Use query or service, not both.");
-              const terms = (value) => value.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word && word !== "aws" && word !== "amazon");
-              const matches = (value) => {
-                const words = terms(value);
-                return catalog.services.filter(
-                  (service) => words.length > 0 && words.every(
-                    (word) => terms(
-                      `${service.id} ${service.name} ${catalogSearchAliases[service.id] || ""}`
-                    ).join(" ").includes(word)
-                  )
-                );
-              };
-              if (args2.service && !catalog.services.some((s) => s.id === args2.service)) {
-                const candidates = matches(args2.service).slice(0, 10);
-                throw new StoreError(
-                  "INVALID_ARGUMENT",
-                  `Unknown service ID ${JSON.stringify(args2.service)}. ${candidates.length ? `Candidate exact IDs: ${candidates.map((s) => s.id).join(", ")}. ` : ""}Call elwing_catalog with query containing one service name, then copy services[].id; do not guess AWS/Amazon prefixes.`
-                );
-              }
-              if (args2.service || args2.query) {
-                const selected = args2.service ? catalog.services.filter((s) => s.id === args2.service) : matches(args2.query);
-                const ids = new Set(selected.map((s) => s.id));
-                catalog.resourceTypes = catalog.resourceTypes.filter(
-                  (r) => ids.has(r.service)
-                );
-                catalog.relationships = catalog.relationships.filter(
-                  (r) => ids.has(r[0]) || ids.has(r[2])
-                );
-                catalog.resourceTypeApprovals = catalog.resourceTypeApprovals.filter(
-                  (r) => ids.has(r[0]) || ids.has(r[2])
-                );
-                const endpoints = new Set(catalog.relationships.flatMap((r) => [r[0], r[2]]));
-                return result({
-                  ...catalog,
-                  services: selected,
-                  relatedServices: catalog.services.filter(
-                    (s) => endpoints.has(s.id) && !ids.has(s.id)
-                  )
-                });
-              }
-              return result(catalog);
-            }
-            case "elwing_get_diagram": {
-              const record2 = await store.get(owner, args2.diagramId);
-              return result({
-                ...record2,
-                document: {
-                  ...record2.document,
-                  nodes: record2.document.nodes.map(({ icon, ...node2 }) => ({
-                    ...node2,
-                    ...icon ? { iconOmitted: true } : {}
-                  }))
-                },
-                geometry: record2.document.nodes.map((node2) => ({
-                  id: node2.id,
-                  x: node2.x,
-                  y: node2.y,
-                  width: nodeWidth(node2),
-                  height: nodeHeight(node2)
-                }))
-              });
-            }
-            case "elwing_check_readability": {
-              const record2 = await store.get(owner, args2.diagramId);
-              return result({
-                diagramId: args2.diagramId,
-                revision: record2.revision,
-                ...checkReadability(record2.document)
-              });
-            }
-            case "elwing_export_diagram": {
-              const record2 = await store.get(owner, args2.diagramId), { data, ...metadata } = await shared.exporter(
-                record2.document,
-                args2.format,
-                record2.updatedAt
-              );
-              const resource = {
-                uri: `elwing://exports/${args2.diagramId}/${record2.revision}/${metadata.filename}`,
-                mimeType: metadata.mimeType,
-                ...args2.format !== "png" ? { text: Buffer.from(data, "base64").toString("utf8") } : { blob: data }
-              };
-              const output = {
-                ...result({ ...metadata, revision: record2.revision, diagramId: args2.diagramId }),
-                content: [
-                  {
-                    type: "text",
-                    text: JSON.stringify({ ...metadata, revision: record2.revision })
-                  },
-                  { type: "resource", resource }
-                ]
-              };
-              if (Buffer.byteLength(JSON.stringify(output)) > 5 * 1024 * 1024)
-                throw new StoreError(
-                  "LIMIT_EXCEEDED",
-                  "Export exceeds 5 MB. Simplify the diagram or try another format."
-                );
-              if (shared.saveExport) {
-                const filePath = await shared.saveExport(
-                  record2,
-                  args2.format,
-                  data,
-                  metadata.filename
-                );
-                Object.assign(output.structuredContent, { filePath });
-                output.content[0] = {
-                  type: "text",
-                  text: JSON.stringify({ ...metadata, revision: record2.revision, filePath })
-                };
-              }
-              return output;
-            }
-            default:
-              if (profile.callExtra)
-                return result(await profile.callExtra(definition.name, owner, args2));
-              throw Error("Unknown tool");
+            return result(
+              batch ? await store.deleteMany(owner, args2) : await store.delete(owner, args2)
+            );
           }
-        } catch (error2) {
-          if (error2?.$metadata)
-            return {
-              ...result({
-                code: "UNAVAILABLE",
-                message: profile.extraTools?.some(
-                  (extra) => extra.definition.name === definition.name
-                ) ? "Storage request failed. Retry identical arguments." : "Storage request failed. For writes, retry identical arguments and mutationId."
-              }),
-              isError: true
+          case "elwing_readability_guide":
+            return result({ guide, designRules, workflow, limits: instructions });
+          case "elwing_catalog": {
+            const catalog = catalogGraph();
+            if (args2.service && args2.query)
+              throw new StoreError("INVALID_ARGUMENT", "Use query or service, not both.");
+            const terms = (value) => value.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word && word !== "aws" && word !== "amazon");
+            const matches = (value) => {
+              const words = terms(value);
+              return catalog.services.filter(
+                (service) => words.length > 0 && words.every(
+                  (word) => terms(`${service.id} ${service.name} ${catalogSearchAliases[service.id] || ""}`).join(" ").includes(word)
+                )
+              );
             };
-          const code = error2 instanceof StoreError ? error2.code : "INVALID_DIAGRAM";
+            if (args2.service && !catalog.services.some((s) => s.id === args2.service)) {
+              const candidates = matches(args2.service).slice(0, 10);
+              throw new StoreError(
+                "INVALID_ARGUMENT",
+                `Unknown service ID ${JSON.stringify(args2.service)}. ${candidates.length ? `Candidate exact IDs: ${candidates.map((s) => s.id).join(", ")}. ` : ""}Call elwing_catalog with query containing one service name, then copy services[].id; do not guess AWS/Amazon prefixes.`
+              );
+            }
+            if (args2.service || args2.query) {
+              const selected = args2.service ? catalog.services.filter((s) => s.id === args2.service) : matches(args2.query);
+              const ids = new Set(selected.map((s) => s.id));
+              catalog.resourceTypes = catalog.resourceTypes.filter((r) => ids.has(r.service));
+              catalog.relationships = catalog.relationships.filter(
+                (r) => ids.has(r[0]) || ids.has(r[2])
+              );
+              catalog.resourceTypeApprovals = catalog.resourceTypeApprovals.filter(
+                (r) => ids.has(r[0]) || ids.has(r[2])
+              );
+              const endpoints = new Set(catalog.relationships.flatMap((r) => [r[0], r[2]]));
+              return result({
+                ...catalog,
+                services: selected,
+                relatedServices: catalog.services.filter(
+                  (s) => endpoints.has(s.id) && !ids.has(s.id)
+                )
+              });
+            }
+            return result(catalog);
+          }
+          case "elwing_get_diagram": {
+            const record2 = await store.get(owner, args2.diagramId);
+            return result({
+              ...record2,
+              document: {
+                ...record2.document,
+                nodes: record2.document.nodes.map(({ icon, ...node2 }) => ({
+                  ...node2,
+                  ...icon ? { iconOmitted: true } : {}
+                }))
+              },
+              geometry: record2.document.nodes.map((node2) => ({
+                id: node2.id,
+                x: node2.x,
+                y: node2.y,
+                width: nodeWidth(node2),
+                height: nodeHeight(node2)
+              }))
+            });
+          }
+          case "elwing_check_readability": {
+            const record2 = await store.get(owner, args2.diagramId);
+            return result({
+              diagramId: args2.diagramId,
+              revision: record2.revision,
+              ...checkReadability(record2.document)
+            });
+          }
+          case "elwing_export_diagram": {
+            const record2 = await store.get(owner, args2.diagramId);
+            let rendered;
+            try {
+              rendered = await shared.exporter(record2.document, args2.format, record2.updatedAt);
+            } catch (error2) {
+              if (error2 instanceof StoreError) throw error2;
+              throw new StoreError(
+                "INVALID_DIAGRAM",
+                "Diagram could not be rendered. Simplify or repair the diagram, then export again."
+              );
+            }
+            const { data, ...metadata2 } = rendered;
+            const resource = {
+              uri: `elwing://exports/${args2.diagramId}/${record2.revision}/${metadata2.filename}`,
+              mimeType: metadata2.mimeType,
+              ...args2.format !== "png" ? { text: Buffer.from(data, "base64").toString("utf8") } : { blob: data }
+            };
+            const output = {
+              ...result({ ...metadata2, revision: record2.revision, diagramId: args2.diagramId }),
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({ ...metadata2, revision: record2.revision })
+                },
+                { type: "resource", resource }
+              ]
+            };
+            if (Buffer.byteLength(JSON.stringify(output)) > 5 * 1024 * 1024)
+              throw new StoreError(
+                "LIMIT_EXCEEDED",
+                "Export exceeds 5 MB. Simplify the diagram or try another format."
+              );
+            if (shared.saveExport) {
+              const filePath = await shared.saveExport(
+                record2,
+                args2.format,
+                data,
+                metadata2.filename
+              );
+              Object.assign(output.structuredContent, { filePath });
+              output.content[0] = {
+                type: "text",
+                text: JSON.stringify({ ...metadata2, revision: record2.revision, filePath })
+              };
+            }
+            return output;
+          }
+          default:
+            if (profile.callExtra)
+              return result(await profile.callExtra(definition.name, owner, args2));
+            throw Error("Unknown tool");
+        }
+      } catch (error2) {
+        if (error2?.$metadata)
           return {
             ...result({
-              code,
-              message: error2.message,
-              ...error2.currentRevision ? { currentRevision: error2.currentRevision } : {}
+              code: "UNAVAILABLE",
+              message: profile.extraTools?.some(
+                (extra) => extra.definition.name === definition.name
+              ) ? "Storage request failed. Retry identical arguments." : "Storage request failed. For writes, retry identical arguments and mutationId."
             }),
             isError: true
           };
-        }
+        if (!(error2 instanceof StoreError))
+          return {
+            ...result({
+              code: "INVALID_DIAGRAM",
+              message: "Request failed. Do not retry unchanged."
+            }),
+            isError: true
+          };
+        return {
+          ...result({
+            code: error2.code,
+            message: error2.message,
+            ...error2.currentRevision ? { currentRevision: error2.currentRevision } : {}
+          }),
+          isError: true
+        };
       }
-    );
-  for (const [name, text2] of [
+    });
+  for (const [name, text3] of [
     ["readability", guide],
     ["design-rules", designRules]
   ])
@@ -41239,7 +41345,7 @@ function buildRouter(owner, shared) {
         mimeType: "text/plain",
         description: profile.resourceDescriptions[name]
       },
-      async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/plain", text: text2 }] })
+      async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/plain", text: text3 }] })
     );
   router.registerPrompt(
     "design_architecture_diagram",

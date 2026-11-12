@@ -25,7 +25,7 @@ export function diagramExcalidraw(
   const routes = renderer.routes(copy);
   const width = bounds.maxX - bounds.minX + 80;
   const height = bounds.maxY - bounds.minY + 100;
-  const timestamp = Date.parse(updatedAt ?? '');
+  const timestamp = new Date(updatedAt ?? '').getTime();
   const updated = Number.isFinite(timestamp) ? timestamp : 0;
   const elements = [];
   const files = {};

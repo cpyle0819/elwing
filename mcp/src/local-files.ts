@@ -1,7 +1,7 @@
 import { mkdir, open, readFile, rename, rm, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { StoreError } from './store-rules.js';
+import { StoreError, parseJson } from './store-rules.js';
 
 export async function atomicWrite(path: string, value: string | Buffer) {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
@@ -27,12 +27,14 @@ export async function atomicWrite(path: string, value: string | Buffer) {
   }
 }
 export async function json(path: string): Promise<any | undefined> {
+  let text: string;
   try {
-    return JSON.parse(await readFile(path, 'utf8'));
+    text = await readFile(path, 'utf8');
   } catch (error: any) {
     if (error.code === 'ENOENT') return;
     throw error;
   }
+  return parseJson(text, 'UNAVAILABLE', 'A data file is unreadable.');
 }
 function alive(pid: number) {
   try {

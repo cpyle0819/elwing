@@ -3,6 +3,7 @@ export type ToolDefinition = {
   name: string;
   description: string;
   inputSchema: any;
+  outputSchema: any;
   readOnly: boolean;
 };
 export type ToolProfile = {

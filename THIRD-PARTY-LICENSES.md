@@ -113,7 +113,7 @@ The DejaVu Sans package metadata says OFL-1.1, but the shipped LICENSE contains 
 | is-extglob | 2.1.1 | MIT | engine | development |
 | is-glob | 4.0.3 | MIT | engine | development |
 | isexe | 2.0.0 | ISC | engine, mcp | development |
-| jose | 6.2.17 | MIT | mcp | development |
+| jose | 6.2.15 | MIT | mcp | development |
 | js-yaml | 4.3.2 | MIT | engine | development |
 | json-buffer | 3.0.1 | MIT | engine | development |
 | json-schema-traverse | 0.4.1 | MIT | engine | development |

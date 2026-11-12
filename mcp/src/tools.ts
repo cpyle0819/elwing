@@ -15,7 +15,7 @@ const catalogSearchAliases: Record<string, string> = {
 };
 
 import { localProfile } from './local-profile.js';
-import type { ToolProfile } from './profile.js';
+import type { ToolDefinition, ToolProfile } from './profile.js';
 
 const string = (maxLength = 80) => ({ type: 'string', minLength: 1, maxLength });
 const id = {
@@ -42,6 +42,90 @@ const schema = (properties: any, required = Object.keys(properties)) => ({
   required,
   additionalProperties: false,
 });
+// Output contracts are strict at the top level so unexpected fields fail instead of
+// reaching the client; large nested payloads (catalog rows, diagram documents) stay loose.
+const text = { type: 'string' };
+const integer = { type: 'integer' };
+const number = { type: 'number' };
+const flag = { type: 'boolean' };
+const list = (items: any = {}) => ({ type: 'array', items });
+const metadata = {
+  diagramId: text,
+  title: text,
+  revision: integer,
+  nodeCount: integer,
+  edgeCount: integer,
+  services: list(text),
+  servicesTruncated: flag,
+  createdAt: text,
+  updatedAt: text,
+};
+const outputSchemas: Record<string, any> = {
+  create_diagram: schema({ diagramId: text, revision: integer, title: text }),
+  list_diagrams: schema({ items: list(schema(metadata)), nextCursor: text }, ['items']),
+  get_diagram: schema({
+    ...metadata,
+    document: { type: 'object' },
+    geometry: list(schema({ id: text, x: number, y: number, width: number, height: number })),
+  }),
+  apply_diagram_changes: schema({
+    diagramId: text,
+    revision: integer,
+    changed: flag,
+    operationsApplied: integer,
+  }),
+  delete_diagram: {
+    type: 'object',
+    oneOf: [
+      schema({ diagramId: text, deleted: flag }),
+      schema({
+        results: list(
+          schema({ diagramId: text, status: text, currentRevision: integer }, [
+            'diagramId',
+            'status',
+          ]),
+        ),
+        deletedCount: integer,
+        notFoundCount: integer,
+        conflictCount: integer,
+      }),
+    ],
+  },
+  export_diagram: schema(
+    {
+      filename: text,
+      mimeType: text,
+      width: number,
+      height: number,
+      revision: integer,
+      diagramId: text,
+      filePath: text,
+    },
+    ['filename', 'mimeType', 'width', 'height', 'revision', 'diagramId'],
+  ),
+  catalog: schema(
+    {
+      services: list(),
+      resourceTypes: list(),
+      relationships: list(),
+      resourceTypeApprovals: list(),
+      diagramPrimitives: { type: 'object' },
+      relatedServices: list(),
+    },
+    ['services', 'resourceTypes', 'relationships', 'resourceTypeApprovals', 'diagramPrimitives'],
+  ),
+  readability_guide: schema({ guide: text, designRules: text, workflow: text, limits: text }),
+  check_readability: schema({
+    diagramId: text,
+    revision: integer,
+    heuristic: flag,
+    resourceCount: integer,
+    connectionCount: integer,
+    findingCount: integer,
+    findings: list(),
+    truncated: flag,
+  }),
+};
 // Add documentation to a copy: the shared operation validation contract remains unchanged.
 const documentedOperations = structuredClone(operationsSchema);
 documentedOperations.description =
@@ -161,6 +245,7 @@ const tool = (
   name: `elwing_${name}`,
   description: description + access,
   inputSchema: schema(properties, required),
+  outputSchema: outputSchemas[name],
   readOnly,
 });
 export const toolDefinitions = [
@@ -301,7 +386,7 @@ export const toolDefinitions = [
   ),
   tool(
     'export_diagram',
-    'Use when the user asks for an image, file, download or shareable picture of a diagram, usually after elwing_check_readability. Render the latest saved diagram as a self-contained SVG, PNG or editable Excalidraw file without changing state. Default workflow: export SVG and PNG; use excalidraw only when requested. Excalidraw keeps card groups and bound arrows but uses built-in fonts and omits crossing gaps; moved arrows may need bend adjustments. Use get_diagram for Elwing diagram data and apply_diagram_changes to arrange before rendering. Run check_readability first. Requires diagramId and format; no unsaved operations are accepted. Returns structuredContent:{filename,mimeType,width,height,revision,diagramId}, a JSON text metadata block and one embedded MCP resource with uri and mimeType. SVG resource.text is UTF-8 XML; Excalidraw resource.text is UTF-8 scene JSON (application/vnd.excalidraw+json, .excalidraw filename); PNG resource.blob is base64 bytes. The elwing://exports/... URI identifies embedded output, not a download endpoint. Dimensions are numeric rendered output dimensions; PNG scales up to 2x subject to 8192 pixels per side and 16 million pixels. Serialize at most 5 MB; LIMIT_EXCEEDED means simplify the diagram or try another format. Export does not repair readability; rendering failures can return INVALID_DIAGRAM.' +
+    'Use when the user asks for an image, file, download or shareable picture of a diagram, usually after elwing_check_readability. Render the latest saved diagram as a self-contained SVG, PNG or editable Excalidraw file without changing state. Default workflow: export SVG and PNG; use excalidraw only when requested. Excalidraw keeps card groups and bound arrows but uses built-in fonts and omits crossing gaps; moved arrows may need bend adjustments. Use get_diagram for Elwing diagram data and apply_diagram_changes to arrange before rendering. Run check_readability first. Requires diagramId and format; no unsaved operations are accepted. Returns structuredContent:{filename,mimeType,width,height,revision,diagramId}, a JSON text metadata block and one embedded MCP resource with uri and mimeType. SVG resource.text is UTF-8 XML; Excalidraw resource.text is UTF-8 scene JSON (application/vnd.excalidraw+json, .excalidraw filename); PNG resource.blob is base64 bytes. The elwing://exports/... URI identifies embedded output, not a download endpoint. Dimensions are numeric rendered output dimensions; PNG scales up to 2x subject to 8192 pixels per side and 16 million pixels. Serialize at most 5 MB; LIMIT_EXCEEDED means simplify the diagram or try another format. Export does not repair readability; rendering failures return INVALID_DIAGRAM with a fixed message; do not retry unchanged.' +
       readErrors,
     {
       diagramId: id,
@@ -362,6 +447,23 @@ const result = (value: any) => ({
   content: [{ type: 'text' as const, text: JSON.stringify(value) }],
   structuredContent: value,
 });
+// Builds a tool's registration config, including its output schema.
+function registration(definition: ToolDefinition, profile: ToolProfile) {
+  return {
+    description: definition.description,
+    inputSchema: fromJsonSchema(definition.inputSchema),
+    outputSchema: fromJsonSchema(definition.outputSchema),
+    annotations: {
+      title: definition.name.replace(/^elwing_/, '').replaceAll('_', ' '),
+      readOnlyHint: definition.readOnly,
+      destructiveHint:
+        ['elwing_delete_diagram', 'elwing_apply_diagram_changes'].includes(definition.name) ||
+        !!profile.destructiveTools?.includes(definition.name),
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  };
+}
 export function buildRouter(owner: Owner, shared: Shared) {
   const profile = shared.profile ?? localProfile;
   const { serverInfo, instructions, guide, workflow } = profile;
@@ -373,205 +475,203 @@ export function buildRouter(owner: Owner, shared: Shared) {
     definitions.splice(extra.position, 0, extra.definition);
   const router = new McpServer(serverInfo, { instructions });
   for (const definition of definitions)
-    router.registerTool(
-      definition.name,
-      {
-        description: definition.description,
-        inputSchema: fromJsonSchema(definition.inputSchema),
-        annotations: {
-          title: definition.name.replace(/^elwing_/, '').replaceAll('_', ' '),
-          readOnlyHint: definition.readOnly,
-          destructiveHint:
-            ['elwing_delete_diagram', 'elwing_apply_diagram_changes'].includes(definition.name) ||
-            !!profile.destructiveTools?.includes(definition.name),
-          idempotentHint: true,
-          openWorldHint: false,
-        },
-      },
-      async (args: any) => {
-        try {
-          const store = shared.store;
-          switch (definition.name) {
-            case 'elwing_create_diagram':
-              return result(await store.create(owner, args));
-            case 'elwing_list_diagrams':
-              return result(await store.list(owner, args.limit, args.cursor));
-            case 'elwing_apply_diagram_changes':
-              return result(await store.apply(owner, args));
-            case 'elwing_delete_diagram': {
-              const batch = args.diagrams !== undefined;
-              if (
-                batch
-                  ? args.diagramId !== undefined || args.expectedRevision !== undefined
-                  : args.diagramId === undefined || args.expectedRevision === undefined
-              )
-                throw new StoreError(
-                  'INVALID_ARGUMENT',
-                  'Supply diagrams OR diagramId and expectedRevision, plus mutationId.',
-                );
-              return result(
-                batch ? await store.deleteMany(owner, args) : await store.delete(owner, args),
+    router.registerTool(definition.name, registration(definition, profile), async (args: any) => {
+      try {
+        const store = shared.store;
+        switch (definition.name) {
+          case 'elwing_create_diagram':
+            return result(await store.create(owner, args));
+          case 'elwing_list_diagrams':
+            return result(await store.list(owner, args.limit, args.cursor));
+          case 'elwing_apply_diagram_changes':
+            return result(await store.apply(owner, args));
+          case 'elwing_delete_diagram': {
+            const batch = args.diagrams !== undefined;
+            if (
+              batch
+                ? args.diagramId !== undefined || args.expectedRevision !== undefined
+                : args.diagramId === undefined || args.expectedRevision === undefined
+            )
+              throw new StoreError(
+                'INVALID_ARGUMENT',
+                'Supply diagrams OR diagramId and expectedRevision, plus mutationId.',
+              );
+            return result(
+              batch ? await store.deleteMany(owner, args) : await store.delete(owner, args),
+            );
+          }
+          case 'elwing_readability_guide':
+            return result({ guide, designRules, workflow, limits: instructions });
+          case 'elwing_catalog': {
+            const catalog = catalogGraph();
+            if (args.service && args.query)
+              throw new StoreError('INVALID_ARGUMENT', 'Use query or service, not both.');
+            const terms = (value: string) =>
+              value
+                .toLowerCase()
+                .split(/[^a-z0-9]+/)
+                .filter((word) => word && word !== 'aws' && word !== 'amazon');
+            const matches = (value: string) => {
+              const words = terms(value);
+              return catalog.services.filter(
+                (service: any) =>
+                  words.length > 0 &&
+                  words.every((word) =>
+                    terms(`${service.id} ${service.name} ${catalogSearchAliases[service.id] || ''}`)
+                      .join(' ')
+                      .includes(word),
+                  ),
+              );
+            };
+            if (args.service && !catalog.services.some((s: any) => s.id === args.service)) {
+              const candidates = matches(args.service).slice(0, 10);
+              throw new StoreError(
+                'INVALID_ARGUMENT',
+                `Unknown service ID ${JSON.stringify(args.service)}. ${candidates.length ? `Candidate exact IDs: ${candidates.map((s: any) => s.id).join(', ')}. ` : ''}Call elwing_catalog with query containing one service name, then copy services[].id; do not guess AWS/Amazon prefixes.`,
               );
             }
-            case 'elwing_readability_guide':
-              return result({ guide, designRules, workflow, limits: instructions });
-            case 'elwing_catalog': {
-              const catalog = catalogGraph();
-              if (args.service && args.query)
-                throw new StoreError('INVALID_ARGUMENT', 'Use query or service, not both.');
-              const terms = (value: string) =>
-                value
-                  .toLowerCase()
-                  .split(/[^a-z0-9]+/)
-                  .filter((word) => word && word !== 'aws' && word !== 'amazon');
-              const matches = (value: string) => {
-                const words = terms(value);
-                return catalog.services.filter(
-                  (service: any) =>
-                    words.length > 0 &&
-                    words.every((word) =>
-                      terms(
-                        `${service.id} ${service.name} ${catalogSearchAliases[service.id] || ''}`,
-                      )
-                        .join(' ')
-                        .includes(word),
-                    ),
-                );
-              };
-              if (args.service && !catalog.services.some((s: any) => s.id === args.service)) {
-                const candidates = matches(args.service).slice(0, 10);
-                throw new StoreError(
-                  'INVALID_ARGUMENT',
-                  `Unknown service ID ${JSON.stringify(args.service)}. ${candidates.length ? `Candidate exact IDs: ${candidates.map((s: any) => s.id).join(', ')}. ` : ''}Call elwing_catalog with query containing one service name, then copy services[].id; do not guess AWS/Amazon prefixes.`,
-                );
-              }
-              if (args.service || args.query) {
-                const selected = args.service
-                  ? catalog.services.filter((s: any) => s.id === args.service)
-                  : matches(args.query);
-                const ids = new Set(selected.map((s: any) => s.id));
-                catalog.resourceTypes = catalog.resourceTypes.filter((r: any) =>
-                  ids.has(r.service),
-                );
-                catalog.relationships = catalog.relationships.filter(
-                  (r: any) => ids.has(r[0]) || ids.has(r[2]),
-                );
-                catalog.resourceTypeApprovals = catalog.resourceTypeApprovals.filter(
-                  (r: any) => ids.has(r[0]) || ids.has(r[2]),
-                );
-                const endpoints = new Set(catalog.relationships.flatMap((r: any) => [r[0], r[2]]));
-                return result({
-                  ...catalog,
-                  services: selected,
-                  relatedServices: catalog.services.filter(
-                    (s: any) => endpoints.has(s.id) && !ids.has(s.id),
-                  ),
-                });
-              }
-              return result(catalog);
-            }
-            case 'elwing_get_diagram': {
-              const record = await store.get(owner, args.diagramId);
+            if (args.service || args.query) {
+              const selected = args.service
+                ? catalog.services.filter((s: any) => s.id === args.service)
+                : matches(args.query);
+              const ids = new Set(selected.map((s: any) => s.id));
+              catalog.resourceTypes = catalog.resourceTypes.filter((r: any) => ids.has(r.service));
+              catalog.relationships = catalog.relationships.filter(
+                (r: any) => ids.has(r[0]) || ids.has(r[2]),
+              );
+              catalog.resourceTypeApprovals = catalog.resourceTypeApprovals.filter(
+                (r: any) => ids.has(r[0]) || ids.has(r[2]),
+              );
+              const endpoints = new Set(catalog.relationships.flatMap((r: any) => [r[0], r[2]]));
               return result({
-                ...record,
-                document: {
-                  ...record.document,
-                  nodes: record.document.nodes.map(({ icon, ...node }: any) => ({
-                    ...node,
-                    ...(icon ? { iconOmitted: true } : {}),
-                  })),
-                },
-                geometry: record.document.nodes.map((node: any) => ({
-                  id: node.id,
-                  x: node.x,
-                  y: node.y,
-                  width: nodeWidth(node),
-                  height: nodeHeight(node),
-                })),
+                ...catalog,
+                services: selected,
+                relatedServices: catalog.services.filter(
+                  (s: any) => endpoints.has(s.id) && !ids.has(s.id),
+                ),
               });
             }
-            case 'elwing_check_readability': {
-              const record = await store.get(owner, args.diagramId);
-              return result({
-                diagramId: args.diagramId,
-                revision: record.revision,
-                ...checkReadability(record.document),
-              });
-            }
-            case 'elwing_export_diagram': {
-              const record = await store.get(owner, args.diagramId),
-                { data, ...metadata } = await shared.exporter(
-                  record.document,
-                  args.format,
-                  record.updatedAt,
-                );
-              const resource = {
-                uri: `elwing://exports/${args.diagramId}/${record.revision}/${metadata.filename}`,
-                mimeType: metadata.mimeType,
-                ...(args.format !== 'png'
-                  ? { text: Buffer.from(data, 'base64').toString('utf8') }
-                  : { blob: data }),
-              };
-              const output = {
-                ...result({ ...metadata, revision: record.revision, diagramId: args.diagramId }),
-                content: [
-                  {
-                    type: 'text' as const,
-                    text: JSON.stringify({ ...metadata, revision: record.revision }),
-                  },
-                  { type: 'resource' as const, resource },
-                ],
-              };
-              if (Buffer.byteLength(JSON.stringify(output)) > 5 * 1024 * 1024)
-                throw new StoreError(
-                  'LIMIT_EXCEEDED',
-                  'Export exceeds 5 MB. Simplify the diagram or try another format.',
-                );
-              if (shared.saveExport) {
-                const filePath = await shared.saveExport(
-                  record,
-                  args.format,
-                  data,
-                  metadata.filename,
-                );
-                Object.assign(output.structuredContent, { filePath });
-                output.content[0] = {
-                  type: 'text',
-                  text: JSON.stringify({ ...metadata, revision: record.revision, filePath }),
-                };
-              }
-              return output;
-            }
-            default:
-              if (profile.callExtra)
-                return result(await profile.callExtra(definition.name, owner, args));
-              throw Error('Unknown tool');
+            return result(catalog);
           }
-        } catch (error: any) {
-          if (error?.$metadata)
-            return {
-              ...result({
-                code: 'UNAVAILABLE',
-                message: profile.extraTools?.some(
-                  (extra) => extra.definition.name === definition.name,
-                )
-                  ? 'Storage request failed. Retry identical arguments.'
-                  : 'Storage request failed. For writes, retry identical arguments and mutationId.',
-              }),
-              isError: true,
+          case 'elwing_get_diagram': {
+            const record = await store.get(owner, args.diagramId);
+            return result({
+              ...record,
+              document: {
+                ...record.document,
+                nodes: record.document.nodes.map(({ icon, ...node }: any) => ({
+                  ...node,
+                  ...(icon ? { iconOmitted: true } : {}),
+                })),
+              },
+              geometry: record.document.nodes.map((node: any) => ({
+                id: node.id,
+                x: node.x,
+                y: node.y,
+                width: nodeWidth(node),
+                height: nodeHeight(node),
+              })),
+            });
+          }
+          case 'elwing_check_readability': {
+            const record = await store.get(owner, args.diagramId);
+            return result({
+              diagramId: args.diagramId,
+              revision: record.revision,
+              ...checkReadability(record.document),
+            });
+          }
+          case 'elwing_export_diagram': {
+            const record = await store.get(owner, args.diagramId);
+            let rendered;
+            try {
+              rendered = await shared.exporter(record.document, args.format, record.updatedAt);
+            } catch (error) {
+              if (error instanceof StoreError) throw error;
+              // Rendering failures are deterministic for a saved revision, so report
+              // INVALID_DIAGRAM (not retryable UNAVAILABLE) without renderer details.
+              throw new StoreError(
+                'INVALID_DIAGRAM',
+                'Diagram could not be rendered. Simplify or repair the diagram, then export again.',
+              );
+            }
+            const { data, ...metadata } = rendered;
+            const resource = {
+              uri: `elwing://exports/${args.diagramId}/${record.revision}/${metadata.filename}`,
+              mimeType: metadata.mimeType,
+              ...(args.format !== 'png'
+                ? { text: Buffer.from(data, 'base64').toString('utf8') }
+                : { blob: data }),
             };
-          const code = error instanceof StoreError ? error.code : 'INVALID_DIAGRAM';
+            const output = {
+              ...result({ ...metadata, revision: record.revision, diagramId: args.diagramId }),
+              content: [
+                {
+                  type: 'text' as const,
+                  text: JSON.stringify({ ...metadata, revision: record.revision }),
+                },
+                { type: 'resource' as const, resource },
+              ],
+            };
+            if (Buffer.byteLength(JSON.stringify(output)) > 5 * 1024 * 1024)
+              throw new StoreError(
+                'LIMIT_EXCEEDED',
+                'Export exceeds 5 MB. Simplify the diagram or try another format.',
+              );
+            if (shared.saveExport) {
+              const filePath = await shared.saveExport(
+                record,
+                args.format,
+                data,
+                metadata.filename,
+              );
+              Object.assign(output.structuredContent, { filePath });
+              output.content[0] = {
+                type: 'text',
+                text: JSON.stringify({ ...metadata, revision: record.revision, filePath }),
+              };
+            }
+            return output;
+          }
+          default:
+            if (profile.callExtra)
+              return result(await profile.callExtra(definition.name, owner, args));
+            throw Error('Unknown tool');
+        }
+      } catch (error: any) {
+        if (error?.$metadata)
           return {
             ...result({
-              code,
-              message: error.message,
-              ...(error.currentRevision ? { currentRevision: error.currentRevision } : {}),
+              code: 'UNAVAILABLE',
+              message: profile.extraTools?.some(
+                (extra) => extra.definition.name === definition.name,
+              )
+                ? 'Storage request failed. Retry identical arguments.'
+                : 'Storage request failed. For writes, retry identical arguments and mutationId.',
             }),
             isError: true,
           };
-        }
-      },
-    );
+        // Only StoreError messages are written for clients; anything else may carry
+        // parser or runtime details, so it gets a fixed message. Unexpected failures
+        // are usually deterministic, so they keep the non-retryable INVALID_DIAGRAM code.
+        if (!(error instanceof StoreError))
+          return {
+            ...result({
+              code: 'INVALID_DIAGRAM',
+              message: 'Request failed. Do not retry unchanged.',
+            }),
+            isError: true,
+          };
+        return {
+          ...result({
+            code: error.code,
+            message: error.message,
+            ...(error.currentRevision ? { currentRevision: error.currentRevision } : {}),
+          }),
+          isError: true,
+        };
+      }
+    });
   for (const [name, text] of [
     ['readability', guide],
     ['design-rules', designRules],
