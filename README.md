@@ -45,6 +45,25 @@ The client owns the process. Protocol messages use stdout; startup errors use
 stderr. No network listener or authentication service is started. After
 installation, rendering and storage work offline.
 
+## What you can do
+
+Talk to your agent in plain language; it picks the Elwing tools. Each guide
+shows an example request, what Elwing does with it and the image you get back.
+Start with the [feature guide](docs/features/README.md).
+
+![Photo uploads architecture diagram](docs/features/diagrams/images/architecture-photo-uploads.png)
+
+| Feature | What it does |
+| --- | --- |
+| [Architecture diagrams](docs/features/diagrams/architecture-diagrams.md) | Describe a system and get an AWS diagram with service icons, labelled relationships and groups. |
+| [Flow charts](docs/features/diagrams/flow-charts.md) | Describe a process and get a top-to-bottom flow chart with decisions and labelled branches. |
+| [Edit an existing diagram](docs/features/diagrams/editing-diagrams.md) | Add, rename, connect, regroup or rearrange parts of a saved diagram in one all-or-nothing change. |
+| [Badges](docs/features/diagrams/badges.md) | Mark new or changed resources with a coloured corner label. |
+| [Readability checks](docs/features/quality/readability-checks.md) | Find overlapping cards, vague or duplicate names and disconnected resources before you share. |
+| [Export images and files](docs/features/sharing/exports.md) | Get SVG, PNG or an editable Excalidraw file. |
+| [Background colours](docs/features/sharing/backgrounds.md) | Keep the default transparent page or pick a colour for slides and documents. |
+| [List, find and delete diagrams](docs/features/management/manage-diagrams.md) | See what you have saved, find diagrams that use a service and delete several at once. |
+
 ## Files and recovery
 
 `--data-dir PATH` takes precedence over `ELWING_DATA_DIR`. Defaults:
