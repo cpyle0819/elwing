@@ -6,13 +6,12 @@ stores diagrams and SVG/PNG/Excalidraw exports on your disk. It does not call a 
 
 ## Install
 
-Use Node.js 22 or newer and Git. This repository is private: your machine
-needs Git access to `cpyle0819/elwing` before installation. The prebuilt server
-is included; installation needs no compiler. npm installs the native resvg
+Use Node.js 22 or newer and Git. The prebuilt server is included;
+installation needs no compiler. npm installs the native resvg
 package for your operating system.
 
 ```sh
-npm install -g git+ssh://git@github.com/cpyle0819/elwing.git
+npm install -g --install-links git+https://github.com/cpyle0819/elwing.git
 elwing-mcp --help
 ```
 
@@ -35,8 +34,8 @@ After installing, add this to your client's MCP configuration:
 ```
 
 Omit `env` to use the default folder. Alternatively use
-`"command": "npx", "args": ["-y", "github:cpyle0819/elwing"]`
-with GitHub access configured. For Claude Code:
+`"command": "npx", "args": ["-y", "github:cpyle0819/elwing"]`.
+For Claude Code:
 
 ```sh
 claude mcp add elwing -- npx -y github:cpyle0819/elwing

@@ -10,7 +10,7 @@ Use Node.js 22 or newer and install from a local copy of this directory:
 npm install /path/to/engine
 ```
 
-The package name is `elwing-diagram-engine`. It is private and must be installed from source; the command above does not require registry publication. Runtime modules use JavaScript and Node built-ins. Import the named entry points below; the package has no root entry point.
+The package name is `elwing-diagram-engine`. It is not published to the npm registry, so install it from source as shown above. Runtime modules use JavaScript and Node built-ins. Import the named entry points below; the package has no root entry point.
 
 ## Create a diagram
 
