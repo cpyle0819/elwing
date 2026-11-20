@@ -1,3 +1,4 @@
+import { FLOWCHART_SHAPES } from '../diagram/flowchart.js';
 const text = (maxLength = 100) => ({ type: 'string', minLength: 1, maxLength });
 const object = (properties, required = Object.keys(properties)) => ({
   type: 'object',
@@ -28,6 +29,19 @@ export const operationsSchema = {
           height: { type: 'number', minimum: 96, maximum: 800 },
           groupId: optionalId,
           resourceType: optionalId,
+          shape: { enum: FLOWCHART_SHAPES },
+          badge: {
+            anyOf: [
+              object(
+                {
+                  label: { type: 'string', minLength: 1, maxLength: 12 },
+                  color: { type: 'string', pattern: '^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$' },
+                },
+                ['label'],
+              ),
+              { type: 'null' },
+            ],
+          },
         },
         ['id'],
       ),
@@ -53,7 +67,7 @@ export const operationsSchema = {
       }),
       operation('move_group', { id: text(), x: coordinate, y: coordinate }),
       operation('rename_diagram', { title: text(80) }),
-      operation('arrange', {}),
+      operation('arrange', { direction: { enum: ['down', 'right'] } }, []),
     ],
   },
 };

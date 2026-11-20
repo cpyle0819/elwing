@@ -26,12 +26,18 @@ export function createExporter(
   });
   const rasterIcons = new Map<string, string>();
   readFileSync(fontPath); // Fail at setup if the bundled font is missing.
-  return async (document: Diagram, format: 'svg' | 'png' | 'excalidraw', updatedAt?: string) => {
+  return async (
+    document: Diagram,
+    format: 'svg' | 'png' | 'excalidraw',
+    updatedAt?: string,
+    { background }: { background?: string } = {},
+  ) => {
     if (format === 'excalidraw') {
       const output = diagramExcalidraw(document, renderer, {
         iconData,
         serviceLabel: (node: any) => serviceLabel(node, catalog),
         updatedAt,
+        background,
       });
       return {
         data: Buffer.from(output.text).toString('base64'),
@@ -41,7 +47,11 @@ export function createExporter(
         filename: (document.title.replace(/[^a-z0-9_-]/gi, '-') || 'architecture') + '.excalidraw',
       };
     }
-    const output = diagramSvg(document, renderer, { iconData, colorConnectors: false });
+    const output = diagramSvg(document, renderer, {
+      iconData,
+      colorConnectors: false,
+      background,
+    });
     let { width, height } = output,
       bytes = Buffer.from(output.svg);
     if (format === 'png') {

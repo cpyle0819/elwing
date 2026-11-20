@@ -14,6 +14,7 @@ Human readability
 - Group collaborating resources by a responsibility or a real boundary. Name the kind of boundary when relevant. Do not imply a VPC, account, Region, or trust boundary without evidence. Avoid decorative outer boxes and one group per resource.
 - Preserve a single abstraction level. Do not duplicate a concrete interaction as both member-level and group-level arrows unless the view explicitly needs both. Use another diagram for implementation detail that obscures an overview.
 - Leave room for connectors and labels. Align related flows, separate independent flows, and reduce long detours, crossing density, and high-degree hubs through meaningful grouping or separate views. Do not delete true relationships just to improve a metric.
+- For process, decision or approval flows, use flowchart shapes and flow arrows instead of custom boxes with filler labels. Read them top to bottom, label every decision branch (Yes/No), and keep decision questions short so the diamond stays compact.
 - Use the explicit arrange operation when the user wants a new overall layout. Targeted node edits preserve other positions. Automatic arrangement is a starting point, not a claim of optimality.
 
 Diagram constraints
@@ -21,6 +22,7 @@ Diagram constraints
 - A resource belongs to at most one flat group; nested groups are unsupported. Membership is groupId, never a containment edge.
 - Default resource width is 164 pixels. Automatic height grows from 96 to 256 pixels with content. Manual sizes are 164–640 wide and 96–800 high.
 - Group borders fit members with 48 pixels at sides/bottom and 80 pixels above. Moving a group must translate its members. Removing a group preserves its resources.
+- Flowchart shapes (service flowchart) cannot join groups. Every edge touching one uses the flow verb, whose label is optional.
 - Existing unsupported edges can remain unchanged. New or semantically changed documented edges must match the selected service/type catalog. Use custom edges only with an accurate explicit label.
 - Coordinates, groups, and labels are diagram notation, not verification of deployment, networking, IAM, or AWS availability.
 `;

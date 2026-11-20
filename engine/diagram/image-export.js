@@ -1,14 +1,25 @@
 import { escapeMarkup } from './text.js';
+import { normalizeBadgeColor } from './badge.js';
+
+export const DEFAULT_EXPORT_BACKGROUND = 'transparent';
+// Returns 'transparent' or '#rrggbb'; throws on anything else so callers reject bad input.
+export function normalizeBackground(value = DEFAULT_EXPORT_BACKGROUND) {
+  if (value === 'transparent') return value;
+  const hex = normalizeBadgeColor(value);
+  if (!hex) throw Error('Invalid background. Use "transparent" or a hex colour #RRGGBB or #RGB.');
+  return hex;
+}
 
 // Frame the rendered diagram using exact connector bounds.
-export function diagramSvg(graph, renderer, options = {}) {
+export function diagramSvg(graph, renderer, { background, ...options } = {}) {
+  const fill = normalizeBackground(background);
   const copy = structuredClone(graph);
   const bounds = renderer.bounds(copy);
   const x = bounds.minX - 40,
     y = bounds.minY - 60;
   const width = bounds.maxX - x + 40,
     height = bounds.maxY - y + 40;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${width} ${height}" width="${width}" height="${height}"><rect x="${x}" y="${y}" width="${width}" height="${height}" fill="#f7f5ef"/><title>${escapeMarkup(copy.title)}</title><text x="${x + 30}" y="${y + 30}" font-family="Arial" font-size="18" fill="#243744">${escapeMarkup(copy.title)}</text>${renderer.render(copy, { ...options, exporting: true })}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${width} ${height}" width="${width}" height="${height}">${fill === 'transparent' ? '' : `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}"/>`}<title>${escapeMarkup(copy.title)}</title><text x="${x + 30}" y="${y + 30}" font-family="Arial" font-size="18" fill="#243744">${escapeMarkup(copy.title)}</text>${renderer.render(copy, { ...options, exporting: true, background: fill, frame: { x, y, width, height } })}</svg>`;
   return { svg, width, height };
 }
 

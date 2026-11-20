@@ -863,6 +863,18 @@ export function relationshipEvidence(source, verb, target) {
   );
 }
 export function relationshipIssue(source, verb, target) {
+  // Flow arrows belong to flow charts: any edge touching a shape is a flow, and a flow needs a shape.
+  if (source?.service === 'flowchart' || target?.service === 'flowchart') {
+    if (verb !== 'flow')
+      return `${source.name} → ${target.name}: connect flowchart shapes with the “flow” verb.`;
+    // A flow links a step to another step or to the AWS resource that performs it, never to a group container.
+    const group = [source, target].find((node) => node?.service === 'group');
+    return group
+      ? `${source.name} → ${target.name}: a “flow” arrow cannot connect to group “${group.name}”; link the shape to a resource inside it.`
+      : null;
+  }
+  if (verb === 'flow')
+    return `${source.name} → ${target.name}: a “flow” arrow must start or end at a flowchart shape (service "flowchart").`;
   if (verb === 'custom') return null;
   for (const node of [source, target]) {
     const exclusion = excludedServices.get(node.service);

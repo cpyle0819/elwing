@@ -1,4 +1,6 @@
 import { isGroup, nodeWidth, nodeHeight } from '../diagram/groups.js';
+import { badgeLayout, BADGE_MARGIN } from '../diagram/badge.js';
+import { isFlowchart } from '../diagram/flowchart.js';
 
 export { readabilityGuide } from '../guidance/readability-guide.js';
 
@@ -22,6 +24,28 @@ export function checkReadability(diagram) {
           'Separate these resource cards so both names and connection endpoints are readable.',
         );
     }
+  }
+  // A badge overhangs its card's corner, so a close neighbour can collide with it.
+  for (const a of resources) {
+    const badge = badgeLayout(a, nodeWidth(a));
+    if (!badge) continue;
+    const left = a.x + badge.x - BADGE_MARGIN,
+      top = a.y + badge.y - BADGE_MARGIN,
+      right = a.x + badge.x + badge.width + BADGE_MARGIN,
+      bottom = a.y + badge.y + badge.height + BADGE_MARGIN;
+    for (const b of resources)
+      if (
+        b !== a &&
+        left < b.x + nodeWidth(b) &&
+        right > b.x &&
+        top < b.y + nodeHeight(b) &&
+        bottom > b.y
+      )
+        add(
+          'crowded_badge',
+          [a.id, b.id],
+          `Move ${b.id} further from ${a.id} so ${a.id}'s badge stays fully visible.`,
+        );
   }
   const degree = new Map(diagram.nodes.map((node) => [node.id, 0]));
   for (const edge of diagram.edges) {
@@ -50,13 +74,15 @@ export function checkReadability(diagram) {
         [node.id],
         'Name the resource or group by the role it plays in this diagram.',
       );
-    if (names.has(name.toLowerCase()))
+    // Flow charts repeat step names such as "End" by design.
+    const key = name.toLowerCase();
+    if (!isFlowchart(node) && names.has(key))
       add(
         'duplicate_name',
-        [names.get(name.toLowerCase()), node.id],
+        [names.get(key), node.id],
         'Distinguish these resources by role or scope if the shared name is ambiguous.',
       );
-    else names.set(name.toLowerCase(), node.id);
+    else if (!isFlowchart(node)) names.set(key, node.id);
     if ((degree.get(node.id) || 0) > 6)
       add(
         'dense_connections',
@@ -71,6 +97,32 @@ export function checkReadability(diagram) {
       );
     if (isGroup(node) && !diagram.nodes.some((member) => member.groupId === node.id))
       add('empty_group', [node.id], 'Confirm this boundary has a purpose in the current view.');
+  }
+  // Flow chart structure: decisions branch with labelled arrows; start/end shapes only begin or end.
+  for (const node of resources.filter(isFlowchart)) {
+    const outgoing = diagram.edges.filter((edge) => edge.source === node.id);
+    const incoming = diagram.edges.filter((edge) => edge.target === node.id);
+    if (node.shape === 'decision') {
+      if (outgoing.length < 2)
+        add(
+          'decision_without_branches',
+          [node.id],
+          'Give this decision at least two outgoing flow arrows, such as Yes and No, or make it a process step.',
+        );
+      for (const edge of outgoing)
+        if (!edge.label?.trim())
+          add(
+            'unlabelled_decision_branch',
+            [edge.id],
+            'Label each arrow leaving a decision with its answer, such as Yes or No.',
+          );
+    }
+    if (node.shape === 'start-end' && incoming.length && outgoing.length)
+      add(
+        'start_end_in_middle',
+        [node.id],
+        'A start/end shape should only begin the flow (outgoing arrows) or end it (incoming arrows); use a process step in the middle.',
+      );
   }
   return {
     heuristic: true,

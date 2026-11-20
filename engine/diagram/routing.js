@@ -1,5 +1,6 @@
 import { manualPoints } from './manual-routing.js';
 import { connectorAttachments } from './diagram-presentation.js';
+import { isFlowchart, clipToOutline, flowSides, flowEdgeText } from './flowchart.js';
 import { isGroup, nodeWidth, nodeHeight, sharedGroupBounds, withinBounds } from './groups.js';
 const GAP = 14,
   LINE_CLEARANCE = 6;
@@ -261,7 +262,10 @@ export function routeGraph(graph) {
   for (const [edgeIndex, edge] of ordered.entries()) {
     const a = nodes.get(edge.source),
       b = nodes.get(edge.target),
-      { sourceSide: sourcePreferred, targetSide: targetPreferred } = connectorAttachments(edge);
+      { sourceSide: sourcePreferred, targetSide: targetPreferred } =
+        edge.verb === 'flow'
+          ? flowSides(edge, a, b, nodeWidth(a), nodeHeight(a), nodeWidth(b), nodeHeight(b))
+          : connectorAttachments(edge);
     const lane = (edgeIndex % 7) * 12,
       limit = graph.edges.length > 150 ? 6 : 14;
     const enclosure = sharedGroupBounds(a, b, nodes);
@@ -311,7 +315,7 @@ export function routeGraph(graph) {
     // Candidate paths reuse segments. The obstacles stay fixed while this edge is scored.
     const hitCache = new Map();
     const intersectionCache = new Map();
-    const requiredLabelSpan = (edge.label ?? edge.verb).length * 6.3 + 22;
+    const requiredLabelSpan = flowEdgeText(edge).length * 6.3 + 22;
     function consider(points, sourceSide, targetSide, sourceOffset, targetOffset) {
       if (sourceSide !== sourcePreferred || targetSide !== targetPreferred) return;
       if (enclosure && points.some((point) => !withinBounds(point, enclosure))) return;
@@ -451,6 +455,21 @@ export function routeGraph(graph) {
     occupied.get(a.id)[best.sourceSide].push(best.sourceOffset);
     occupied.get(b.id)[best.targetSide].push(best.targetOffset);
     addSegments(index, best.segments);
+    // Flowchart endpoints sit on the drawn outline, not the bounding box.
+    if (isFlowchart(a) || isFlowchart(b)) {
+      const points = [...best.points];
+      if (isFlowchart(a))
+        points[0] = clipToOutline(a, nodeWidth(a), nodeHeight(a), points[0], best.sourceSide);
+      if (isFlowchart(b))
+        points[points.length - 1] = clipToOutline(
+          b,
+          nodeWidth(b),
+          nodeHeight(b),
+          points.at(-1),
+          best.targetSide,
+        );
+      best = { ...best, points, segments: segments(points) };
+    }
     result.set(edge.id, {
       ...best,
       d: best.points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' '),
@@ -463,7 +482,8 @@ export function routeGraph(graph) {
       return { x: n.x - 4, y: n.y - 4, w: nodeWidth(n) + 8, h: nodeHeight(n) + 8 };
     });
   for (const edge of ordered) {
-    const label = edge.label ?? edge.verb;
+    const label = flowEdgeText(edge);
+    const flow = edge.verb === 'flow';
     const route = result.get(edge.id),
       fullWidth = label.length * 6.3 + 6,
       candidates = [];
@@ -497,8 +517,10 @@ export function routeGraph(graph) {
           x: segment.a.x + (segment.b.x - segment.a.x) * fraction,
           y: segment.a.y + (segment.b.y - segment.a.y) * fraction,
         };
+        // Flow labels stay horizontal, beside vertical segments.
+        if (flow && !segment.h && text) mid.x += width / 2 + 6;
         const box = text
-          ? segment.h
+          ? segment.h || flow
             ? { x: mid.x - width / 2, y: mid.y - 7, w: width, h: 14 }
             : { x: mid.x - 7, y: mid.y - width / 2, w: 14, h: width }
           : { x: mid.x, y: mid.y, w: 0, h: 0 };
@@ -515,7 +537,7 @@ export function routeGraph(graph) {
           x: mid.x,
           y: mid.y,
           labelWidth: width,
-          labelAngle: segment.h ? 0 : -90,
+          labelAngle: segment.h || flow ? 0 : -90,
           labelText: text,
         });
       }

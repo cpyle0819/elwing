@@ -60,7 +60,8 @@ test('scene preserves SVG geometry, visible connectors and reciprocal bindings w
   assert.equal(output.height, svgBefore.height);
   assert.equal(scene.type, 'excalidraw');
   assert.equal(scene.version, 2);
-  assert.equal(scene.appState.viewBackgroundColor, '#f7f5ef');
+  assert.equal(scene.appState.viewBackgroundColor, 'transparent');
+  assert.equal(scene.appState.exportBackground, false);
   assert.equal(new Set(scene.elements.map((element) => element.id)).size, scene.elements.length);
   const byId = new Map(scene.elements.map((element) => [element.id, element]));
   for (const node of normalized.nodes) {
@@ -146,4 +147,16 @@ test('empty scenes and multiline/custom cards serialize without deleted empty te
     assert.ok(scene.elements.every((element) => element.type !== 'text' || element.text.length));
     assert.ok(scene.elements.every((element) => element.updated === 0));
   }
+});
+
+test('scene background follows the requested colour and rejects invalid values', () => {
+  const scene = JSON.parse(
+    diagramExcalidraw(graph, renderer, { ...options, background: '#ABC' }).text,
+  );
+  assert.equal(scene.appState.viewBackgroundColor, '#aabbcc');
+  assert.equal(scene.appState.exportBackground, true);
+  assert.throws(
+    () => diagramExcalidraw(graph, renderer, { ...options, background: 'red' }),
+    /Invalid background/,
+  );
 });

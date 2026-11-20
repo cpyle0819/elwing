@@ -10,7 +10,9 @@ import {
   MAX_CARD_HEIGHT,
   MAX_RESOURCE_TEXT,
 } from './resource-sizing.js';
-import { arrangeLayered } from './layout.js';
+import { arrangeLayered, arrangeFlowDown } from './layout.js';
+import { FLOWCHART_SHAPES, isFlowchart } from './flowchart.js';
+import { badgeIssue, badgeClearance } from './badge.js';
 export { verbs } from '../catalog/relationship-rules.js';
 
 const MAX_RESOURCES = 200;
@@ -81,7 +83,9 @@ function relationshipKey(edge) {
     edge.source,
     edge.target,
     edge.verb,
-    edge.verb === 'custom' && typeof edge.label === 'string' ? edge.label.trim() : undefined,
+    ['custom', 'flow'].includes(edge.verb) && typeof edge.label === 'string'
+      ? edge.label.trim()
+      : undefined,
     edge.verb === 'custom' ? (edge.connectionType ?? 'flow') : undefined,
     edge.verb === 'custom' ? (edge.sourceSide ?? 'auto') : undefined,
     edge.verb === 'custom' ? (edge.targetSide ?? 'auto') : undefined,
@@ -98,9 +102,11 @@ export function addRelationship(doc, source, verb, target, id, label, sides = {}
     source,
     verb,
     target,
-    ...(verb === 'custom'
+    ...(verb === 'custom' || (verb === 'flow' && label !== undefined)
       ? { label: typeof label === 'string' ? label.trim() : label, ...savedSides(sides) }
-      : {}),
+      : verb === 'flow'
+        ? savedSides(sides)
+        : {}),
   };
   validateRelationship(doc, edge);
   doc.edges.push(edge);
@@ -111,7 +117,10 @@ function validateRelationship(doc, edge, excludedId) {
   const sourceNode = doc.nodes.find((node) => node.id === source);
   const targetNode = doc.nodes.find((node) => node.id === target);
   if (!sourceNode || !targetNode) throw Error('Choose a source and target resource.');
-  if (!verbs.includes(verb) && verb !== 'custom') throw Error('Choose a supported relationship.');
+  if (!verbs.includes(verb) && verb !== 'custom' && verb !== 'flow')
+    throw Error('Choose a supported relationship.');
+  if (verb === 'flow' && label !== undefined && !isCustomLabelValid(label))
+    throw Error('Enter a flow label of 1–240 characters, or leave it out.');
   if (verb === 'custom' && !isCustomLabelValid(label))
     throw Error('Enter a custom label of 1–240 characters.');
   const issue = relationshipIssue(sourceNode, verb, targetNode);
@@ -125,7 +134,16 @@ export function updateRelationship(doc, id, source, verb, target, label, sides) 
   if (!edge) throw Error('This relationship no longer exists.');
   if (sides !== undefined) validateSides(sides);
   const next = { ...edge, source, verb, target };
-  if (verb === 'custom') {
+  if (verb === 'flow') {
+    delete next.connectionType;
+    if (label === undefined) delete next.label;
+    else next.label = typeof label === 'string' ? label.trim() : label;
+    if (sides !== undefined || !['custom', 'flow'].includes(edge.verb)) {
+      delete next.sourceSide;
+      delete next.targetSide;
+      Object.assign(next, savedSides(sides ?? {}));
+    }
+  } else if (verb === 'custom') {
     next.label = typeof label === 'string' ? label.trim() : label;
     if (sides !== undefined || edge.verb !== 'custom') {
       delete next.sourceSide;
@@ -169,7 +187,7 @@ export function validateDocument(doc, services) {
   for (const node of doc.nodes) {
     validateGroupMembership(node, doc.nodes);
   }
-  validateImportedRelationships(doc.edges, ids);
+  validateImportedRelationships(doc.edges, ids, new Map(doc.nodes.map((node) => [node.id, node])));
   return structuredClone(doc);
 }
 
@@ -202,12 +220,19 @@ function validateResource(node, services, ids, validatedIcons) {
   )
     throw Error('Invalid custom icon. Upload an image through the resource panel.');
   if (node?.icon !== undefined) validatedIcons.add(node.icon);
+  // Flowchart shapes carry a shape and inner text only; other nodes have no shape.
+  if (isFlowchart(node) && !FLOWCHART_SHAPES.includes(node.shape))
+    throw Error(`Invalid flowchart shape. Choose one of: ${FLOWCHART_SHAPES.join(', ')}.`);
+  if (node && !isFlowchart(node) && node.shape !== undefined)
+    throw Error('Only flowchart nodes (service "flowchart") have a shape.');
+  if (isFlowchart(node) && node.groupId !== undefined)
+    throw Error('Flowchart shapes cannot join groups.');
   if (
     !node ||
     typeof node.id !== 'string' ||
     !node.id ||
     ids.has(node.id) ||
-    !(services.includes(node.service) || node.service === 'custom' || node.service === 'group') ||
+    !(services.includes(node.service) || ['custom', 'group', 'flowchart'].includes(node.service)) ||
     typeof node.name !== 'string' ||
     node.name.length > (isGroup(node) ? 60 : MAX_RESOURCE_TEXT) ||
     (node.resourceName !== undefined &&
@@ -221,6 +246,8 @@ function validateResource(node, services, ids, validatedIcons) {
     Math.abs(node.y) > MAX_COORDINATE
   )
     throw Error('Invalid resource in diagram.');
+  const issue = badgeIssue(node);
+  if (issue) throw Error(issue);
 }
 
 function validateGroupMembership(node, nodes) {
@@ -246,7 +273,7 @@ function validateGroupMembership(node, nodes) {
       throw Error('Invalid card dimensions.');
 }
 
-function validateImportedRelationships(edges, ids) {
+function validateImportedRelationships(edges, ids, nodes) {
   const edgeIds = new Set(),
     combinations = new Set();
   for (const edge of edges) {
@@ -274,15 +301,19 @@ function validateImportedRelationships(edges, ids) {
       !ids.has(edge.source) ||
       !ids.has(edge.target) ||
       edge.source === edge.target ||
-      ![...verbs, ...legacyVerbs, 'custom'].includes(edge.verb) ||
+      ![...verbs, ...legacyVerbs, 'custom', 'flow'].includes(edge.verb) ||
       (edge.color !== undefined &&
         (typeof edge.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(edge.color))) ||
       (edge.verb === 'custom' && !isCustomLabelValid(edge.label)) ||
-      (edge.verb !== 'custom' && edge.label !== undefined) ||
+      (edge.verb === 'flow' && edge.label !== undefined && !isCustomLabelValid(edge.label)) ||
+      // Any edge touching a flowchart shape is a flow, and a flow needs a shape at one end.
+      (edge.verb === 'flow') !==
+        (isFlowchart(nodes.get(edge.source)) || isFlowchart(nodes.get(edge.target))) ||
+      (!['custom', 'flow'].includes(edge.verb) && edge.label !== undefined) ||
       ['sourceSide', 'targetSide'].some(
         (key) =>
           edge[key] !== undefined &&
-          (edge.verb !== 'custom' || !attachmentSides.includes(edge[key])),
+          (!['custom', 'flow'].includes(edge.verb) || !attachmentSides.includes(edge[key])),
       ) ||
       (edge.connectionType !== undefined &&
         (edge.verb !== 'custom' ||
@@ -296,8 +327,16 @@ function validateImportedRelationships(edges, ids) {
 }
 
 // Groups are laid out internally, then placed as units in the outer dependency graph.
-export function arrange(doc) {
+export function arrange(doc, { direction } = {}) {
   for (const edge of doc.edges) delete edge.waypoints;
+  // Pure flow charts read top to bottom unless the caller chooses a direction.
+  const down = direction
+    ? direction === 'down'
+    : doc.nodes.length > 0 && doc.nodes.every(isFlowchart);
+  if (down && !doc.nodes.some(isGroup)) {
+    arrangeFlowDown(doc);
+    return;
+  }
   if (doc.nodes.some(isGroup)) {
     arrangeGroups(doc, arrangeLayered);
     return;
@@ -326,10 +365,14 @@ export function route(a, b, offset = 0) {
 export function compactLayout(doc, columns = 1) {
   if (doc.nodes.some(isGroup)) return structuredClone(doc);
   const graph = structuredClone(doc);
-  arrange(graph);
+  arrange(graph, { direction: 'right' });
   const layers = [...new Set(graph.nodes.map((n) => n.x))].sort((a, b) => a - b);
   let y = 60;
-  const columnWidth = Math.max(164, ...graph.nodes.map(nodeWidth)) + 56;
+  // Badged cards keep their overhang clear of the next column.
+  const columnWidth = Math.max(
+    Math.max(164, ...graph.nodes.map(nodeWidth)) + 56,
+    ...graph.nodes.map((node) => nodeWidth(node) + badgeClearance(node, nodeWidth(node))),
+  );
   for (const layer of layers) {
     const nodes = graph.nodes.filter((n) => n.x === layer);
     for (let index = 0; index < nodes.length; index += columns) {

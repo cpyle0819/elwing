@@ -1,3 +1,4 @@
+import { isFlowchart, flowWidth, flowHeight, flowTextWidth, flowMaxLines } from './flowchart.js';
 export const MIN_CARD_WIDTH = 164;
 export const MIN_CARD_HEIGHT = 96;
 export const MAX_CARD_WIDTH = 640;
@@ -44,8 +45,24 @@ export function wrapResourceText(text = '', width = MIN_CARD_WIDTH) {
   return lines;
 }
 
-export const resourceWidth = (node) => node.width ?? MIN_CARD_WIDTH;
+export const resourceWidth = (node) =>
+  isFlowchart(node) ? flowWidth(node) : (node.width ?? MIN_CARD_WIDTH);
+const wrapFlowText = (node, width, height) =>
+  wrapResourceText(node.name, flowTextWidth(node, width, height) + 28);
+// Flowchart text wraps to the usable width inside its outline; given a height, lines that
+// would spill past the outline are dropped and the last kept line ends with an ellipsis.
+export function flowTextLines(node, width = resourceWidth(node), height) {
+  const lines = wrapFlowText(node, width, height);
+  if (height === undefined) return lines;
+  const max = flowMaxLines(node, height);
+  if (lines.length <= max) return lines;
+  const kept = lines.slice(0, max);
+  kept[max - 1] = kept[max - 1].slice(0, -1) + '…';
+  return kept;
+}
 export function resourceHeight(node) {
+  if (isFlowchart(node))
+    return flowHeight(node, wrapFlowText(node, resourceWidth(node), 96).length);
   if (node.height !== undefined) return node.height;
   const lines = wrapResourceText(node.name, resourceWidth(node)).length;
   return Math.max(

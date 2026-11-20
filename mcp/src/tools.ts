@@ -4,6 +4,7 @@ import { readabilityGuide, checkReadability } from 'elwing-diagram-engine/agent/
 import { designRules } from 'elwing-diagram-engine/guidance/design-rules';
 import { catalogGraph } from 'elwing-diagram-engine/catalog/graph';
 import { nodeWidth, nodeHeight } from 'elwing-diagram-engine/diagram/groups';
+import { normalizeBackground } from 'elwing-diagram-engine/image-export';
 import { StoreError, uuidPattern, type Diagram } from './store-rules.js';
 import type { DiagramStorage, DiagramRecord } from './storage.js';
 import type { Owner } from './owner.js';
@@ -99,9 +100,10 @@ const outputSchemas: Record<string, any> = {
       height: number,
       revision: integer,
       diagramId: text,
+      background: text,
       filePath: text,
     },
-    ['filename', 'mimeType', 'width', 'height', 'revision', 'diagramId'],
+    ['filename', 'mimeType', 'width', 'height', 'revision', 'diagramId', 'background'],
   ),
   catalog: schema(
     {
@@ -132,11 +134,11 @@ documentedOperations.description =
   'Required ordered array of 0–1200 operation objects; no default. Runs atomically on one diagram, with no partial changes on failure. Empty or unchanged batches return changed:false without advancing revision. Maximum 2 MB. Read the guide, relevant catalog entries and current diagram first. Example: [{"op":"upsert_node","id":"processor","service":"lambda","name":"Resize photos"},{"op":"arrange"}]. Each item must match exactly one operation schema; extra fields are rejected. Unspecified node fields and embedded icons are preserved.';
 const operationHelp: Record<string, string> = {
   upsert_node:
-    'Create or patch one resource card by stable element ID. New nodes require service; omitted new name defaults to id and x/y to 0. Existing fields are preserved when omitted. Use set_group for containers; null groupId/resourceType clears the field.',
+    'Create or patch one resource card or flow chart shape (service "flowchart" with shape) by stable element ID. New nodes require service; omitted new name defaults to id and x/y to 0. Existing fields are preserved when omitted. Use set_group for containers; null groupId/resourceType/badge clears the field.',
   remove_node:
     'Remove an existing resource or group and its incident edges. Removing a group preserves member nodes and clears their membership. Missing element IDs fail the whole batch.',
   upsert_edge:
-    'Create or update a directed relationship between two different existing nodes. Standard verbs must match catalog-approved source/verb/target combinations; invalid or duplicate relationships fail the batch. The engine accepts custom notation with a nonblank label without checking catalog relationships; the design rules still prohibit using it to disguise an invalid AWS relationship.',
+    'Create or update a directed relationship between two different existing nodes. Standard verbs must match catalog-approved source/verb/target combinations; invalid or duplicate relationships fail the batch. Edges touching flowchart shapes use verb "flow" with an optional label. The engine accepts custom notation with a nonblank label without checking catalog relationships; the design rules still prohibit using it to disguise an invalid AWS relationship.',
   remove_edge:
     'Remove one existing relationship by its stable edge ID. A missing edge fails the whole batch.',
   set_group:
@@ -146,11 +148,15 @@ const operationHelp: Record<string, string> = {
   rename_diagram:
     'Change this diagram title; use create_diagram to make a separate diagram instead.',
   arrange:
-    'Rearrange the entire diagram using automatic layout. No additional fields. Run after structural editing, then check_readability; skip when preserving intentional manual positions.',
+    'Rearrange the entire diagram using automatic layout. Optional direction: "down" or "right"; pure flow charts default to top to bottom, other diagrams to left to right. Run after structural editing, then check_readability; skip when preserving intentional manual positions.',
 };
 const fieldHelp: Record<string, string> = {
   service:
-    'Exact catalog service ID string, 1–100 characters, e.g. "lambda"; not a service display name. "custom" denotes a custom resource. Required when creating a node (no default), optional when updating (preserves the service). Changing service preserves other fields, which must remain compatible, including resourceType, resourceName and any embedded icon. Use set_group rather than service="group".',
+    'Exact catalog service ID string, 1–100 characters, e.g. "lambda"; not a service display name. "custom" denotes a custom resource; "flowchart" denotes a flow chart shape and requires shape. Required when creating a node (no default), optional when updating (preserves the service). Changing service preserves other fields, which must remain compatible, including resourceType, resourceName and any embedded icon. Use set_group rather than service="group".',
+  shape:
+    'Flow chart shape string, required when service="flowchart" and rejected otherwise: "start-end" (pill: where the flow begins or ends), "process" (rectangle: a step), "decision" (diamond: a question; label its outgoing flows, e.g. Yes/No), "input-output" (parallelogram: data in or out), "document" (wavy bottom) or "subprocess" (rectangle with side bars). The name field is the text inside the shape. Omission preserves an existing shape; switching service away from flowchart drops it. Flowchart shapes have no resourceName, icon or resourceType and cannot join groups.',
+  direction:
+    'Optional layout direction string: "down" (top to bottom, for flow charts) or "right" (left to right). Default: "down" when every node is a flowchart shape, otherwise "right". In top-to-bottom layout the Yes path runs straight down and No branches sit to the right of their decision. Diagrams with groups always use the left-to-right group layout.',
   resourceName:
     'Optional human-readable heading for a custom resource card, not an identifier; string of 1–60 characters containing at least one non-whitespace character, e.g. "External image service". Allowed only when the resulting node has service="custom". Omission preserves an existing heading; on a new node the field stays absent and renders as "Custom". The name field supplies the separate body text. Empty string and null are rejected.',
   description:
@@ -163,17 +169,19 @@ const fieldHelp: Record<string, string> = {
     'Optional group element ID string (1–100 characters), e.g. "backend", not the group display name, or null to remove membership. Must identify a group in the final batch result. Omission preserves membership; new nodes are ungrouped unless assigned by this or another operation. Each resource belongs to at most one group; groups cannot nest.',
   resourceType:
     'Optional exact catalog resource-type ID string (1–100 characters), e.g. "res-aws-lambda-lambda-function", not its display name. Must belong to the resulting node service; null removes the type. Omission preserves it, including when service changes; new nodes have no type unless supplied. An incompatible retained or supplied type rejects the batch.',
+  badge:
+    'Optional corner badge object {label, color?}, e.g. {"label":"NEW"} or {"label":"CHANGED","color":"#9a5b00"}, or null to remove it. label is 1–12 characters, shown in upper case; color is a #RRGGBB or #RGB hex string, default green #1d8102; text colour is automatic. Resource cards only; groups reject badges. Omission preserves an existing badge. Use badges only when a diagram mixes new and existing architecture, on the new parts, or whenever the user asks.',
   source:
     'Required existing source node/group element ID string, 1–100 characters, e.g. "processor". The arrow begins here; must differ from target. No default.',
   target:
     'Required existing target node/group element ID string, 1–100 characters, e.g. "bucket". The arrow ends here; must differ from source. No default.',
-  verb: 'Required relationship string, 1–240 characters, e.g. "writes to"; no default or preservation on update. A standard verb must be supported and catalog-approved for the endpoint services/types. "custom" requires a nonblank label and skips catalog relationship validation in the engine; follow the design rules rather than using it to disguise an invalid AWS relationship.',
+  verb: 'Required relationship string, 1–240 characters, e.g. "writes to"; no default or preservation on update. A standard verb must be supported and catalog-approved for the endpoint services/types. "flow" is the flow chart arrow: required on every edge touching a flowchart shape, needs a flowchart shape at one end at least, and takes an optional label. "custom" requires a nonblank label and skips catalog relationship validation in the engine; follow the design rules rather than using it to disguise an invalid AWS relationship.',
   label:
-    'Custom-relationship label string, 1–240 characters, e.g. "sends events". Required when verb="custom", including updates; there is no fallback to the previous label. Leading and trailing whitespace is trimmed, and the result must be nonblank. Optional and discarded for non-custom verbs, whose visible text comes from verb.',
+    'Custom-relationship label string, 1–240 characters, e.g. "sends events". Required when verb="custom", including updates; there is no fallback to the previous label. Leading and trailing whitespace is trimmed, and the result must be nonblank. Optional for verb="flow" (e.g. "Yes" or "No" on decision branches; omit for plain arrows; omission on update removes it). Discarded for other verbs, whose visible text comes from verb.',
   sourceSide:
-    'Optional source attachment string: "auto", "top", "bottom", "left" or "right", e.g. "right". Used only for custom edges; ignored for standard verbs. New custom edges default to auto when omitted. On an existing custom edge, omit both sides to preserve stored attachments; supplying either side resets an omitted counterpart to auto. Converting a standard edge to custom with both sides omitted stores its resolved attachments instead. Auto is not stored and resolves to the right side at the source.',
+    'Optional source attachment string: "auto", "top", "bottom", "left" or "right", e.g. "right". Used only for custom and flow edges; ignored for standard verbs. New custom edges default to auto when omitted. On an existing custom edge, omit both sides to preserve stored attachments; supplying either side resets an omitted counterpart to auto. Converting a standard edge to custom with both sides omitted stores its resolved attachments instead. Auto is not stored and resolves to the right side at the source.',
   targetSide:
-    'Optional target attachment string: "auto", "top", "bottom", "left" or "right", e.g. "left". Used only for custom edges; ignored for standard verbs. New custom edges default to auto when omitted. On an existing custom edge, omit both sides to preserve stored attachments; supplying either side resets an omitted counterpart to auto. Converting a standard edge to custom with both sides omitted stores its resolved attachments instead. Auto is not stored and resolves to left, or top for a retained custom connectionType of read/reference.',
+    'Optional target attachment string: "auto", "top", "bottom", "left" or "right", e.g. "left". Used only for custom and flow edges; ignored for standard verbs. New custom edges default to auto when omitted. On an existing custom edge, omit both sides to preserve stored attachments; supplying either side resets an omitted counterpart to auto. Converting a standard edge to custom with both sides omitted stores its resolved attachments instead. Auto is not stored and resolves to left, or top for a retained custom connectionType of read/reference.',
   members:
     'Required array of 1–199 unique non-group node ID strings (each 1–100 characters), e.g. ["processor","bucket"]; use IDs, not display names. Every member must exist when this operation runs; create members earlier in the batch. Replaces the whole membership list: omitted former members become ungrouped and listed nodes leave their previous groups. No default; empty lists and nested groups are rejected.',
   title:
@@ -217,6 +225,28 @@ for (const variant of documentedOperations.items.oneOf) {
     variant.properties[key] = {
       ...field,
       description,
+      ...(key === 'badge'
+        ? {
+            anyOf: [
+              {
+                ...field.anyOf[0],
+                properties: {
+                  label: {
+                    ...field.anyOf[0].properties.label,
+                    description:
+                      'Required badge text string, 1–12 characters, e.g. "NEW"; displayed in upper case.',
+                  },
+                  color: {
+                    ...field.anyOf[0].properties.color,
+                    description:
+                      'Optional badge fill as a hex string, #RRGGBB or #RGB, e.g. "#1d8102" (the default).',
+                  },
+                },
+              },
+              field.anyOf[1],
+            ],
+          }
+        : {}),
       ...(key === 'members'
         ? {
             items: {
@@ -282,7 +312,7 @@ export const toolDefinitions = [
             items: {
               type: 'object',
               description:
-                'Node object in an Elwing diagram document (format version 1); e.g. {"id":"processor","service":"lambda","name":"Resize photos","x":0,"y":0}. Required: id (unique nonempty element ID string), service (exact catalog service ID or "custom"/"group"), name (display string, up to 1000 characters or 60 for groups), x/y (finite canvas coordinates between -100000 and 100000). Optional: resourceName (custom-only nonblank identifier, up to 60 characters); description (card text); width/height (explicit canvas size, 164–640/96–800 for resources, 1–210000 for groups); groupId (existing group ID, no nesting); resourceType (catalog type ID compatible with service); icon (custom-only PNG data URL, up to 100000 characters). Omitted optional fields remain absent and engine sizing applies. Example type: "res-aws-lambda-lambda-function". Use exported Elwing diagram data for import; existing model validation applies.',
+                'Node object in an Elwing diagram document (format version 1); e.g. {"id":"processor","service":"lambda","name":"Resize photos","x":0,"y":0}. Required: id (unique nonempty element ID string), service (exact catalog service ID or "custom"/"group"/"flowchart"), name (display string, up to 1000 characters or 60 for groups), x/y (finite canvas coordinates between -100000 and 100000). Optional: resourceName (custom-only nonblank identifier, up to 60 characters); description (card text); width/height (explicit canvas size, 164–640/96–800 for resources, 1–210000 for groups); groupId (existing group ID, no nesting); resourceType (catalog type ID compatible with service); icon (custom-only PNG data URL, up to 100000 characters); badge (resource-only corner badge {label:1–12 characters, color?:#RRGGBB or #RGB}, e.g. {"label":"NEW"}); shape (required for service "flowchart": start-end, process, decision, input-output, document or subprocess; flowchart nodes have no groupId). Omitted optional fields remain absent and engine sizing applies. Example type: "res-aws-lambda-lambda-function". Use exported Elwing diagram data for import; existing model validation applies.',
             },
           },
           edges: {
@@ -293,7 +323,7 @@ export const toolDefinitions = [
             items: {
               type: 'object',
               description:
-                'Edge object in an Elwing diagram document (format version 1); e.g. {"id":"save","source":"processor","target":"bucket","verb":"writes to"}. Required: id (unique nonempty edge ID string), source/target (distinct existing node IDs), verb (supported relationship string). For custom verb, label is required (nonblank text, 1–240 characters); non-custom edges cannot carry label. Optional: sourceSide/targetSide (custom-only auto/top/bottom/left/right, automatic if omitted), connectionType (custom-only flow/read/write/reference, flow when omitted), waypoints (up to 100 {x,y} finite canvas points in -100000..100000; e.g. [{"x":120,"y":80}]), color (six-digit hex string, e.g. "#123abc"). Omitted bends/sizing use engine defaults. Duplicate connections are rejected. Import validation preserves supported existing verbs; catalog guides new relationships.',
+                'Edge object in an Elwing diagram document (format version 1); e.g. {"id":"save","source":"processor","target":"bucket","verb":"writes to"}. Required: id (unique nonempty edge ID string), source/target (distinct existing node IDs), verb (supported relationship string). For custom verb, label is required (nonblank text, 1–240 characters); flow edges (required on any edge touching a flowchart shape) may carry an optional label; other edges cannot carry label. Optional: sourceSide/targetSide (custom/flow-only auto/top/bottom/left/right, automatic if omitted), connectionType (custom-only flow/read/write/reference, flow when omitted), waypoints (up to 100 {x,y} finite canvas points in -100000..100000; e.g. [{"x":120,"y":80}]), color (six-digit hex string, e.g. "#123abc"). Omitted bends/sizing use engine defaults. Duplicate connections are rejected. Import validation preserves supported existing verbs; catalog guides new relationships.',
             },
           },
         },
@@ -386,7 +416,7 @@ export const toolDefinitions = [
   ),
   tool(
     'export_diagram',
-    'Use when the user asks for an image, file, download or shareable picture of a diagram, usually after elwing_check_readability. Render the latest saved diagram as a self-contained SVG, PNG or editable Excalidraw file without changing state. Default workflow: export SVG and PNG; use excalidraw only when requested. Excalidraw keeps card groups and bound arrows but uses built-in fonts and omits crossing gaps; moved arrows may need bend adjustments. Use get_diagram for Elwing diagram data and apply_diagram_changes to arrange before rendering. Run check_readability first. Requires diagramId and format; no unsaved operations are accepted. Returns structuredContent:{filename,mimeType,width,height,revision,diagramId}, a JSON text metadata block and one embedded MCP resource with uri and mimeType. SVG resource.text is UTF-8 XML; Excalidraw resource.text is UTF-8 scene JSON (application/vnd.excalidraw+json, .excalidraw filename); PNG resource.blob is base64 bytes. The elwing://exports/... URI identifies embedded output, not a download endpoint. Dimensions are numeric rendered output dimensions; PNG scales up to 2x subject to 8192 pixels per side and 16 million pixels. Serialize at most 5 MB; LIMIT_EXCEEDED means simplify the diagram or try another format. Export does not repair readability; rendering failures return INVALID_DIAGRAM with a fixed message; do not retry unchanged.' +
+    'Use when the user asks for an image, file, download or shareable picture of a diagram, usually after elwing_check_readability. Render the latest saved diagram as a self-contained SVG, PNG or editable Excalidraw file without changing state. Default workflow: export SVG and PNG; use excalidraw only when requested. Excalidraw keeps card groups and bound arrows but uses built-in fonts and omits crossing gaps; moved arrows may need bend adjustments. Use get_diagram for Elwing diagram data and apply_diagram_changes to arrange before rendering. Run check_readability first. Requires diagramId and format; no unsaved operations are accepted. Optional background is "transparent" (default) or a hex colour; transparent output has low contrast on dark slides (the title, flowchart outlines and connector labels fade), so pass a light colour such as "#ffffff" when the image will sit on a dark page. Returns structuredContent:{filename,mimeType,width,height,revision,diagramId,background}, a JSON text metadata block and one embedded MCP resource with uri and mimeType. SVG resource.text is UTF-8 XML; Excalidraw resource.text is UTF-8 scene JSON (application/vnd.excalidraw+json, .excalidraw filename); PNG resource.blob is base64 bytes. The elwing://exports/... URI identifies embedded output, not a download endpoint. Dimensions are numeric rendered output dimensions; PNG scales up to 2x subject to 8192 pixels per side and 16 million pixels. Serialize at most 5 MB; LIMIT_EXCEEDED means simplify the diagram or try another format. Export does not repair readability; rendering failures return INVALID_DIAGRAM with a fixed message; do not retry unchanged.' +
       readErrors,
     {
       diagramId: id,
@@ -396,11 +426,18 @@ export const toolDefinitions = [
         description:
           'Required format string, exactly "svg", "png" or "excalidraw" (lowercase); no default. Example: "svg" for scalable vector output as resource.text, or "png" for raster output as base64 resource.blob. Use "excalidraw" only when requested, for editable scene JSON as resource.text; save it with a .excalidraw extension and open in Excalidraw. Other values are rejected.',
       },
+      background: {
+        type: 'string',
+        pattern: '^(transparent|#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}))$',
+        description:
+          'Optional page background string: "transparent" (default) or a hex colour "#RRGGBB"/"#RGB", e.g. "#ffffff" for an opaque white page. Transparent PNGs keep an alpha channel, transparent SVGs omit the page rectangle and Excalidraw files set viewBackgroundColor to the same value. Cards, groups and shapes stay opaque. For dark slides pass a light colour: the title, flowchart outlines and connector labels are dark and fade on a dark page. Returned background is the normalized lowercase #rrggbb or "transparent". Other values are rejected.',
+      },
     },
+    ['diagramId', 'format'],
   ),
   tool(
     'catalog',
-    'Use when building or changing a diagram to find exact service IDs, resource types and documented relationship verbs, or to repair a rejected relationship. Start with query using one service name, e.g. {"query":"Glue"}; Names, IDs and known aliases (QuickSight for amazon-quick) are case-insensitive substring matches with punctuation and AWS/Amazon prefixes ignored. Copy services[].id into node inputs and service lookups; do not guess prefixes. Optional service selects one exact, case-sensitive ID, e.g. {"service":"aws-glue"}. query and service cannot be combined. Omit both for the large complete catalog; focused calls are sufficient for design. Returns {services:[{id,name}],resourceTypes:[{id,service,name}],relationships:[[sourceServiceId,verb,targetServiceId]],resourceTypeApprovals,diagramPrimitives,relatedServices?} as structuredContent and JSON text. Filtered relationships include both incoming and outgoing triples touching the matching services; relatedServices names their other endpoints. resourceTypeApprovals is an array of [sourceServiceId,verb,targetServiceId,sourceTypeIds[],targetTypeIds[]] rows for those services; resource types not explicitly approved cannot inherit service-level relationships. Primitives describe custom/group notation and groupExample:{nodes,edges}. Search with no matches returns empty arrays; unknown exact service returns INVALID_ARGUMENT with candidate IDs and search advice. Use catalog triples when they fit the real operation; a genuine catalog gap may use a clearly labeled custom edge, never an invented capability or extra hop just to satisfy notation. Use readability_guide for design and get_diagram for saved state. Static lookup does not modify diagrams or verify deployed infrastructure/permissions.',
+    'Use when building or changing a diagram to find exact service IDs, resource types and documented relationship verbs, or to repair a rejected relationship. Start with query using one service name, e.g. {"query":"Glue"}; Names, IDs and known aliases (QuickSight for amazon-quick) are case-insensitive substring matches with punctuation and AWS/Amazon prefixes ignored. Copy services[].id into node inputs and service lookups; do not guess prefixes. Optional service selects one exact, case-sensitive ID, e.g. {"service":"aws-glue"}. query and service cannot be combined. Omit both for the large complete catalog; focused calls are sufficient for design. Returns {services:[{id,name}],resourceTypes:[{id,service,name}],relationships:[[sourceServiceId,verb,targetServiceId]],resourceTypeApprovals,diagramPrimitives,relatedServices?} as structuredContent and JSON text. Filtered relationships include both incoming and outgoing triples touching the matching services; relatedServices names their other endpoints. resourceTypeApprovals is an array of [sourceServiceId,verb,targetServiceId,sourceTypeIds[],targetTypeIds[]] rows for those services; resource types not explicitly approved cannot inherit service-level relationships. Primitives describe custom/group/flowchart notation, groupExample:{nodes,edges} and flowExample:{nodes,edges}. Search with no matches returns empty arrays; unknown exact service returns INVALID_ARGUMENT with candidate IDs and search advice. Use catalog triples when they fit the real operation; a genuine catalog gap may use a clearly labeled custom edge, never an invented capability or extra hop just to satisfy notation. Use readability_guide for design and get_diagram for saved state. Static lookup does not modify diagrams or verify deployed infrastructure/permissions.',
     {
       service: {
         ...string(),
@@ -441,8 +478,21 @@ export type Shared = {
     document: Diagram,
     format: 'svg' | 'png' | 'excalidraw',
     updatedAt?: string,
+    options?: { background?: string },
   ) => Promise<{ data: string; mimeType: string; width: number; height: number; filename: string }>;
 };
+// Validate the requested page background before reading storage so bad input is
+// INVALID_ARGUMENT rather than a rendering failure.
+export function exportBackground(value: unknown): string {
+  try {
+    return normalizeBackground(value ?? undefined);
+  } catch {
+    throw new StoreError(
+      'INVALID_ARGUMENT',
+      'background must be "transparent" or a hex colour #RRGGBB or #RGB.',
+    );
+  }
+}
 const result = (value: any) => ({
   content: [{ type: 'text' as const, text: JSON.stringify(value) }],
   structuredContent: value,
@@ -582,10 +632,13 @@ export function buildRouter(owner: Owner, shared: Shared) {
             });
           }
           case 'elwing_export_diagram': {
+            const background = exportBackground(args.background);
             const record = await store.get(owner, args.diagramId);
             let rendered;
             try {
-              rendered = await shared.exporter(record.document, args.format, record.updatedAt);
+              rendered = await shared.exporter(record.document, args.format, record.updatedAt, {
+                background,
+              });
             } catch (error) {
               if (error instanceof StoreError) throw error;
               // Rendering failures are deterministic for a saved revision, so report
@@ -595,7 +648,8 @@ export function buildRouter(owner: Owner, shared: Shared) {
                 'Diagram could not be rendered. Simplify or repair the diagram, then export again.',
               );
             }
-            const { data, ...metadata } = rendered;
+            const { data, ...rest } = rendered;
+            const metadata = { ...rest, background };
             const resource = {
               uri: `elwing://exports/${args.diagramId}/${record.revision}/${metadata.filename}`,
               mimeType: metadata.mimeType,

@@ -1,7 +1,26 @@
+import { normalizeBackground } from './image-export.js';
 import { isGroup, nodeWidth, nodeHeight } from './groups.js';
 import { connectorEdges } from './diagram-presentation.js';
 import { wrapResourceText, resourceTextTop } from './resource-sizing.js';
 import { nodeIconId } from '../catalog/resource-types.js';
+import { badgeLayout, BADGE_FONT_SIZE } from './badge.js';
+import { isFlowchart, flowPolygon, flowFill, FLOW_STROKE, FLOW_TEXT, WAVE } from './flowchart.js';
+import { flowTextLines } from './resource-sizing.js';
+
+// Stadium outline sampled as a polygon; Excalidraw caps rectangle corner radius.
+function stadiumPoints(w, h) {
+  const r = Math.min(w, h) / 2,
+    points = [];
+  for (let i = 0; i <= 32; i++) {
+    const a = -Math.PI / 2 + (Math.PI * i) / 32;
+    points.push([w - r + r * Math.cos(a), r + r * Math.sin(a)]);
+  }
+  for (let i = 0; i <= 32; i++) {
+    const a = Math.PI / 2 + (Math.PI * i) / 32;
+    points.push([r + r * Math.cos(a), r + r * Math.sin(a)]);
+  }
+  return points;
+}
 
 const truncate = (text, limit) => (text.length > limit ? text.slice(0, limit - 1) + '…' : text);
 const digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -18,8 +37,9 @@ const indexKey = (index) =>
 export function diagramExcalidraw(
   graph,
   renderer,
-  { iconData = {}, serviceLabel = (node) => node.service, updatedAt } = {},
+  { iconData = {}, serviceLabel = (node) => node.service, updatedAt, background } = {},
 ) {
+  const fill = normalizeBackground(background);
   const copy = structuredClone(graph);
   const bounds = renderer.bounds(copy);
   const routes = renderer.routes(copy);
@@ -187,6 +207,66 @@ export function diagramExcalidraw(
         groupIds,
       });
   }
+  // Native diamond or rectangle where Excalidraw has one; otherwise a filled
+  // closed line drawn behind a transparent rectangle that holds the text and arrow bindings.
+  function flowchartElements(node, id, groupIds, w, h) {
+    const fill = flowFill(node.shape);
+    const style = { strokeColor: FLOW_STROKE, strokeWidth: 1.5, backgroundColor: fill, groupIds };
+    const native = {
+      decision: 'diamond',
+      process: 'rectangle',
+      subprocess: 'rectangle',
+    }[node.shape];
+    let container;
+    if (native) container = element(native, id, node.x, node.y, w, h, style);
+    else {
+      const points =
+        node.shape === 'start-end' ? stadiumPoints(w, h) : flowPolygon(node.shape, w, h);
+      line(
+        'line',
+        `${id}:outline`,
+        [...points, points[0]].map(([x, y]) => ({ x: node.x + x, y: node.y + y })),
+        style,
+      );
+      container = element('rectangle', id, node.x, node.y, w, h, {
+        strokeColor: 'transparent',
+        backgroundColor: 'transparent',
+        groupIds,
+      });
+    }
+    cards.set(node.id, container);
+    if (node.shape === 'subprocess')
+      for (const x of [12, w - 12])
+        line(
+          'line',
+          `${id}:bar:${x}`,
+          [
+            { x: node.x + x, y: node.y },
+            { x: node.x + x, y: node.y + h },
+          ],
+          style,
+        );
+    const lines = flowTextLines(node, w, h);
+    const fontSize = 12;
+    const textHeight = lines.length * 16;
+    const centre = node.shape === 'document' ? (h - WAVE) / 2 : h / 2;
+    const label = text(
+      `${id}:name`,
+      lines.join('\n'),
+      node.x,
+      node.y + centre - textHeight / 2 + fontSize,
+      fontSize,
+      w,
+      {
+        strokeColor: FLOW_TEXT,
+        textAlign: 'center',
+        verticalAlign: 'middle',
+        containerId: container.id,
+        groupIds,
+      },
+    );
+    if (label) container.boundElements.push({ id: label.id, type: 'text' });
+  }
   // Draw connectors behind opaque resource cards, just as SVG does.
   const arrowElements = [];
   for (const edge of connectorEdges(copy.edges)) {
@@ -227,6 +307,10 @@ export function diagramExcalidraw(
       groupIds = [`unit:${JSON.stringify(node.id)}`];
     const w = nodeWidth(node),
       h = nodeHeight(node);
+    if (isFlowchart(node)) {
+      flowchartElements(node, id, groupIds, w, h);
+      continue;
+    }
     cards.set(
       node.id,
       element('rectangle', id, node.x, node.y, w, h, {
@@ -269,6 +353,50 @@ export function diagramExcalidraw(
       .join('\n');
     text(`${id}:name`, value, node.x + 14, node.y + top, 12, w - 28, { groupIds });
   }
+  // Badges come after every card so a neighbouring card never hides one.
+  for (const node of copy.nodes.filter((node) => !isGroup(node))) {
+    const id = cardId(node.id),
+      groupIds = [`unit:${JSON.stringify(node.id)}`];
+    const badge = badgeLayout(node, nodeWidth(node));
+    if (badge) {
+      const pill = element(
+        'rectangle',
+        `${id}:badge`,
+        node.x + badge.x,
+        node.y + badge.y,
+        badge.width,
+        badge.height,
+        {
+          strokeColor: badge.color,
+          backgroundColor: badge.color,
+          roundness: { type: 3, value: badge.height / 2 },
+          groupIds,
+        },
+      );
+      const label = element(
+        'text',
+        `${id}:badge:label`,
+        node.x + badge.x,
+        node.y + badge.y + (badge.height - BADGE_FONT_SIZE * 1.25) / 2,
+        badge.width,
+        BADGE_FONT_SIZE * 1.25,
+        {
+          strokeColor: badge.textColor,
+          fontSize: BADGE_FONT_SIZE,
+          fontFamily: 2,
+          text: badge.label,
+          originalText: badge.label,
+          textAlign: 'center',
+          verticalAlign: 'middle',
+          containerId: pill.id,
+          autoResize: false,
+          lineHeight: 1.25,
+          groupIds,
+        },
+      );
+      pill.boundElements.push({ id: label.id, type: 'text' });
+    }
+  }
   for (const { edge, route, arrow } of arrowElements) {
     for (const [end, nodeId, point] of [
       ['start', edge.source, route.points[0]],
@@ -302,7 +430,7 @@ export function diagramExcalidraw(
       version: 2,
       source: 'Elwing',
       elements,
-      appState: { viewBackgroundColor: '#f7f5ef' },
+      appState: { viewBackgroundColor: fill, exportBackground: fill !== 'transparent' },
       files,
     }),
     width,

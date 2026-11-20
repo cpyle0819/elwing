@@ -1,4 +1,5 @@
 import { nodeWidth, nodeHeight } from './groups.js';
+import { badgeClearance } from './badge.js';
 const average = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
 // Keep the chosen row order while placing each card as close as possible to its neighbors.
@@ -171,11 +172,126 @@ export function arrangeLayered(
       260,
       Math.max(0, ...labels.map((edge) => (edge.label ?? edge.verb ?? '').length * 6.3 + 48)),
     );
-    x += Math.max(...layer.map((id) => nodeWidth(byId.get(id)))) + Math.max(columnGap, labelSpace);
+    const gap = Math.max(columnGap, labelSpace);
+    // A badged card's overhang must also clear the next column; unbadged layouts are unchanged.
+    x += Math.max(
+      ...layer.map((id) => {
+        const width = nodeWidth(byId.get(id));
+        return width + Math.max(gap, badgeClearance(byId.get(id), width));
+      }),
+    );
   }
   const top = Math.min(...ids.map((id) => positions.get(id) - heights.get(id) / 2));
   for (const node of doc.nodes) {
     node.x = columns.get(rank.get(node.id));
     node.y = 110 + Math.round((positions.get(node.id) - heights.get(node.id) / 2 - top) / 10) * 10;
+  }
+}
+
+// Depth-first back edges (loop-backs to an earlier step) are left out of layering.
+function forwardEdges(doc) {
+  const state = new Map(),
+    back = new Set();
+  const visit = (id) => {
+    state.set(id, 1);
+    for (const e of doc.edges.filter((e) => e.source === id)) {
+      if (state.get(e.target) === 1) back.add(e.id);
+      else if (!state.has(e.target)) visit(e.target);
+    }
+    state.set(id, 2);
+  };
+  const roots = doc.nodes.filter((n) => !doc.edges.some((e) => e.target === n.id));
+  for (const n of [...roots, ...doc.nodes]) if (!state.has(n.id)) visit(n.id);
+  return doc.edges.filter((e) => !back.has(e.id));
+}
+
+// Top-to-bottom flow chart arrange. Lays out a transposed copy (layers become rows),
+// then keeps the Yes/first branch on a straight spine and moves "No" branches beside their decision.
+export function arrangeFlowDown(doc, { rowGap = 64, siblingGap = 96 } = {}) {
+  const proxy = {
+    nodes: doc.nodes.map((n) => ({
+      id: n.id,
+      service: 'custom',
+      name: '',
+      x: 0,
+      y: 0,
+      width: nodeHeight(n),
+      height: nodeWidth(n),
+    })),
+    edges: forwardEdges(doc).map((e) => ({ ...e })),
+  };
+  arrangeLayered(proxy, { columnGap: rowGap, rowGap: siblingGap });
+  const byId = new Map(doc.nodes.map((n) => [n.id, n]));
+  for (const p of proxy.nodes) Object.assign(byId.get(p.id), { x: p.y, y: p.x });
+  const cx = (n) => n.x + nodeWidth(n) / 2,
+    cy = (n) => n.y + nodeHeight(n) / 2;
+  const forward = (e) => byId.get(e.target).y > byId.get(e.source).y;
+  const outgoing = (id) => doc.edges.filter((e) => e.source === id && forward(e));
+  const isNo = (e) => /^no$/i.test(e.label ?? '');
+  // Spine: from each root follow the Yes edge, else the first non-No edge.
+  const roots = doc.nodes.filter((n) => !doc.edges.some((e) => e.target === n.id && forward(e)));
+  const placed = new Set();
+  for (const root of roots) {
+    let node = root;
+    while (node && !placed.has(node.id)) {
+      placed.add(node.id);
+      const out = outgoing(node.id);
+      const next = out.find((e) => /^yes$/i.test(e.label ?? '')) ?? out.find((e) => !isNo(e));
+      if (!next) break;
+      const child = byId.get(next.target);
+      if (!placed.has(child.id)) child.x = cx(root) - nodeWidth(child) / 2;
+      node = child;
+    }
+  }
+  // "No" targets sit on the decision's row, to its right.
+  for (const edge of doc.edges.filter((e) => isNo(e) && forward(e))) {
+    const d = byId.get(edge.source),
+      t = byId.get(edge.target);
+    if (placed.has(t.id)) continue;
+    const dx = d.x + nodeWidth(d) + siblingGap - t.x,
+      dy = cy(d) - nodeHeight(t) / 2 - t.y;
+    // Move the whole No branch with its head, stopping where it rejoins the spine or meets
+    // another branch: a step with an arrow from outside the branch is a join and stays put.
+    const branch = [t.id];
+    for (let i = 0; i < branch.length; i++)
+      for (const e of outgoing(branch[i]))
+        if (!placed.has(e.target) && !branch.includes(e.target)) branch.push(e.target);
+    const incoming = (id) => doc.edges.filter((e) => e.target === id && forward(e));
+    for (let pruned = true; pruned; ) {
+      pruned = false;
+      for (const id of branch.slice(1))
+        if (incoming(id).some((e) => !branch.includes(e.source))) {
+          branch.splice(branch.indexOf(id), 1);
+          pruned = true;
+        }
+    }
+    // Each step moves at most once, with the first branch that owns it.
+    for (const id of branch) {
+      const n = byId.get(id);
+      n.x += dx;
+      n.y += dy;
+      placed.add(id);
+    }
+  }
+  // Branch moves can land a step on another one; push the lower of each pair down a row.
+  const settled = [];
+  for (const n of [...doc.nodes].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    for (let hit = true; hit; ) {
+      const other = settled.find(
+        (o) =>
+          n.x < o.x + nodeWidth(o) &&
+          o.x < n.x + nodeWidth(n) &&
+          n.y < o.y + nodeHeight(o) &&
+          o.y < n.y + nodeHeight(n),
+      );
+      hit = Boolean(other);
+      if (other) n.y = other.y + nodeHeight(other) + rowGap;
+    }
+    settled.push(n);
+  }
+  const left = Math.min(...doc.nodes.map((n) => n.x));
+  for (const n of doc.nodes) {
+    n.x = Math.round(n.x - left + 70);
+    n.y = Math.round(n.y);
   }
 }

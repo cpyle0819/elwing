@@ -6,6 +6,7 @@ import {
   allowedNodeRelationships,
 } from './relationship-rules.js';
 import { resourceTypes, resourceTypeApprovals } from './resource-types.js';
+import { FLOWCHART_SHAPES } from '../diagram/flowchart.js';
 
 const services = JSON.parse(readFileSync(new URL('./services.json', import.meta.url), 'utf8'));
 
@@ -21,6 +22,34 @@ export function catalogGraph() {
         automaticBounds: true,
       },
       custom: { service: 'custom', relationships: 'custom' },
+      flowchart: {
+        service: 'flowchart',
+        shapes: [...FLOWCHART_SHAPES],
+        relationships: 'flow',
+        optionalLabel: true,
+        groups: false,
+        arrange: 'top to bottom when every node is a flowchart shape',
+      },
+      flowExample: {
+        nodes: [
+          {
+            id: 'start',
+            service: 'flowchart',
+            shape: 'start-end',
+            name: 'Order placed',
+            x: 0,
+            y: 0,
+          },
+          { id: 'check', service: 'flowchart', shape: 'decision', name: 'In stock?', x: 0, y: 0 },
+          { id: 'ship', service: 'flowchart', shape: 'process', name: 'Ship order', x: 0, y: 0 },
+          { id: 'notify', service: 'lambda', name: 'Back-order notifier', x: 0, y: 0 },
+        ],
+        edges: [
+          { id: 'f1', source: 'start', target: 'check', verb: 'flow' },
+          { id: 'f2', source: 'check', target: 'ship', verb: 'flow', label: 'Yes' },
+          { id: 'f3', source: 'check', target: 'notify', verb: 'flow', label: 'No' },
+        ],
+      },
       groupExample: {
         nodes: [
           { id: 'app', service: 'group', name: 'Checkout', x: 0, y: 0 },

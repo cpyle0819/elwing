@@ -33,7 +33,10 @@ export function applyOperations(original, operations, serviceIds) {
       if (isGroup(node) || args.service === 'group')
         fail('Use set_group and move_group for group containers.');
       Object.assign(node, args);
-      for (const key of ['groupId', 'resourceType']) if (node[key] === null) delete node[key];
+      for (const key of ['groupId', 'resourceType', 'badge'])
+        if (node[key] === null) delete node[key];
+      // Switching a flowchart shape to another service drops its shape.
+      if (node.service !== 'flowchart' && args.shape === undefined) delete node.shape;
     } else if (op === 'remove_node') {
       find(diagram.nodes, args.id, 'Resource');
       removeNode(diagram, args.id);
@@ -86,7 +89,7 @@ export function applyOperations(original, operations, serviceIds) {
         node.y += dy;
       }
     } else if (op === 'rename_diagram') diagram.title = args.title;
-    else if (op === 'arrange') arrange(diagram);
+    else if (op === 'arrange') arrange(diagram, args);
     else fail(`Unknown diagram operation: ${op}`);
   }
   sizeGroups(diagram);
